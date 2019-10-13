@@ -7,6 +7,9 @@ import hu.ben.photoalbumrenaming.exception.ArgumentsNotValidException;
 
 public final class ValidatorUtil {
 
+    private ValidatorUtil() {
+    }
+
     public static void validateArguments(String[] arguments) {
         validateNumberOfArguments(arguments);
         validateIfArgumentIsValidPath(arguments);
@@ -40,9 +43,6 @@ public final class ValidatorUtil {
                     arguments[0]
                 ));
         }
-    }
-
-    private ValidatorUtil() {
     }
 
 }
