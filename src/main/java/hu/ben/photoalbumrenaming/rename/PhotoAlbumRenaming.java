@@ -1,7 +1,6 @@
 package hu.ben.photoalbumrenaming.rename;
 
 import java.io.File;
-import java.io.IOException;
 import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
@@ -14,6 +13,7 @@ import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.time.DateUtils;
 
 import hu.ben.photoalbumrenaming.constant.Constants;
+import hu.ben.photoalbumrenaming.exception.FileRenamingException;
 import hu.ben.photoalbumrenaming.model.ImageFileWrapper;
 import hu.ben.photoalbumrenaming.model.MediaDirectory;
 import hu.ben.photoalbumrenaming.model.MediaWrapper;
@@ -91,7 +91,7 @@ public class PhotoAlbumRenaming {
             for (MediaDirectory mediaDirectory : mediaDirectoryList) {
                 renameImageFilesInMediaDirectory(mediaDirectory);
                 renameVideoFilesInMediaDirectory(mediaDirectory);
-                renameDirectory(mediaDirectory);
+                renameMediaDirectory(mediaDirectory);
             }
         }
     }
@@ -147,7 +147,7 @@ public class PhotoAlbumRenaming {
         return list.size() < 1000 ? 3 : String.valueOf(list.size()).length();
     }
 
-    private void renameDirectory(MediaDirectory mediaDirectory) {
+    private void renameMediaDirectory(MediaDirectory mediaDirectory) {
         File directoryFile = mediaDirectory.getDirectoryFile();
         String directoryAbsolutePath = directoryFile.getAbsolutePath();
         String newFileName =
@@ -156,13 +156,12 @@ public class PhotoAlbumRenaming {
     }
 
     private void renameFile(String absoluteFilePath, String newFileName) {
-        try {
-            FileUtils.moveFile(
-                FileUtils.getFile(absoluteFilePath),
-                FileUtils.getFile(FilenameUtils.getFullPath(absoluteFilePath) + newFileName)
-            );
-        } catch (IOException e) {
-            e.printStackTrace();
+        boolean result = FileUtils
+            .getFile(absoluteFilePath)
+            .renameTo(FileUtils.getFile(FilenameUtils.getFullPath(absoluteFilePath) + newFileName));
+
+        if (!result) {
+            throw new FileRenamingException("Renaming was unsuccessful. " + absoluteFilePath);
         }
     }
 
