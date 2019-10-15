@@ -23,18 +23,23 @@ public class PhotoAlbumRenamingUtil {
 
     private static final String CREATION_TIME_TAG_NAME = "0x0100";
 
+    private static final int MAX = 999;
+
+    private static final int MIN = 1;
+
     public static Date getImageFileCreationTime(File file) {
-        Date fileCreationTime = null;
+        Date result = null;
 
         try {
             Metadata metadata = ImageMetadataReader.readMetadata(file);
             ExifSubIFDDirectory directory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
-            fileCreationTime = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
+            Date originalFileCreationTime = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
+            result = correctDate(originalFileCreationTime);
         } catch (ImageProcessingException | IOException e) {
             e.printStackTrace();
         }
 
-        return fileCreationTime;
+        return result;
     }
 
     public static Date getVideoFileCreationTime(File file) {
@@ -65,8 +70,9 @@ public class PhotoAlbumRenamingUtil {
                             // correctly)
                             .toFormatter(Locale.ENGLISH);
 
-                        ZonedDateTime fileCreationTime = ZonedDateTime.parse(tagDescription, dateTimeFormatter);
-                        result = Date.from(fileCreationTime.toInstant());
+                        ZonedDateTime fileCreationZoneDateTime = ZonedDateTime.parse(tagDescription, dateTimeFormatter);
+                        Date fileCreationDate = Date.from(fileCreationZoneDateTime.toInstant());
+                        result = correctDate(fileCreationDate);
                     }
                 }
             }
@@ -75,6 +81,20 @@ public class PhotoAlbumRenamingUtil {
         }
 
         return result;
+    }
+
+    /*
+     * This method is necessary for the occasion if two dates are identical.
+     */
+    private static Date correctDate(Date fileCreationDate) {
+        long time = fileCreationDate.getTime();
+        int randomNumber = generateRandomNumber();
+
+        return new Date(time + randomNumber);
+    }
+
+    private static int generateRandomNumber() {
+        return (int) ((Math.random() * ((MAX - MIN) + 1)) + MIN);
     }
 
 }
