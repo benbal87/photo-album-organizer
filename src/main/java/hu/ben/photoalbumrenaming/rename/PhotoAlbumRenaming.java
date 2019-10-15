@@ -199,8 +199,8 @@ public class PhotoAlbumRenaming {
             newImageFileWrapper.getImageFiles().add(file);
             imageFileWrapperList.add(newImageFileWrapper);
         } else {
-            ImageFileWrapper imageFileWrapper =
-                getImageFileWrapperWithSameDayIfExists(imageFileWrapperList, imageFileCreationTime);
+            FileWrapper imageFileWrapper =
+                getFileWrapperWithSameDayIfExists(imageFileWrapperList, imageFileCreationTime);
 
             if (imageFileWrapper == null) {
                 ImageFileWrapper newImageFileWrapper = new ImageFileWrapper();
@@ -223,8 +223,8 @@ public class PhotoAlbumRenaming {
             newVideoFileWrapper.getVideoFiles().add(file);
             videoFileWrapperList.add(newVideoFileWrapper);
         } else {
-            VideoFileWrapper videoFileWrapper =
-                getVideoFileWrapperWithSameDayIfExists(videoFileWrapperList, videoFileCreationTime);
+            FileWrapper videoFileWrapper =
+                getFileWrapperWithSameDayIfExists(videoFileWrapperList, videoFileCreationTime);
 
             if (videoFileWrapper == null) {
                 VideoFileWrapper newVideoFileWrapper = new VideoFileWrapper();
@@ -237,29 +237,15 @@ public class PhotoAlbumRenaming {
         }
     }
 
-    private ImageFileWrapper getImageFileWrapperWithSameDayIfExists(
-        ArrayList<ImageFileWrapper> imageFileWrapperList,
-        Date imageFileCreationTime
+    private <T extends FileWrapper> FileWrapper getFileWrapperWithSameDayIfExists(
+        ArrayList<T> fileWrapperList,
+        Date fileCreationTime
     ) {
-        return imageFileWrapperList
+        return fileWrapperList
             .stream()
-            .filter(imageFileWrapper -> DateUtils.isSameDay(
-                imageFileCreationTime,
-                imageFileWrapper.getFileCreationDate()
-            ))
-            .findAny()
-            .orElse(null);
-    }
-
-    private VideoFileWrapper getVideoFileWrapperWithSameDayIfExists(
-        ArrayList<VideoFileWrapper> videoFileWrapperList,
-        Date videoFileCreationTime
-    ) {
-        return videoFileWrapperList
-            .stream()
-            .filter(videoFileWrapper -> DateUtils.isSameDay(
-                videoFileCreationTime,
-                videoFileWrapper.getFileCreationDate()
+            .filter(fileWrapper -> DateUtils.isSameDay(
+                fileCreationTime,
+                fileWrapper.getFileCreationDate()
             ))
             .findAny()
             .orElse(null);
