@@ -1,4 +1,4 @@
-package hu.ben.photoalbumrenaming.model;
+package hu.ben.photoalbumorganizer.model;
 
 import lombok.AllArgsConstructor;
 import lombok.Getter;

@@ -1,12 +1,12 @@
-package hu.ben.photoalbumrenaming.model;
+package hu.ben.photoalbumorganizer.model;
 
 import java.io.File;
 import java.util.Date;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import hu.ben.photoalbumrenaming.comparator.ImageCreationTimeComparator;
-import hu.ben.photoalbumrenaming.comparator.VideoCreationTimeComparator;
+import hu.ben.photoalbumorganizer.comparator.ImageCreationTimeComparator;
+import hu.ben.photoalbumorganizer.comparator.VideoCreationTimeComparator;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.NoArgsConstructor;

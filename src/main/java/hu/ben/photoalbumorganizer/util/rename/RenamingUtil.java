@@ -1,4 +1,4 @@
-package hu.ben.photoalbumrenaming.rename;
+package hu.ben.photoalbumorganizer.util.rename;
 
 import java.io.File;
 import java.text.MessageFormat;
@@ -12,16 +12,16 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.time.DateUtils;
 
-import hu.ben.photoalbumrenaming.constant.Constants;
-import hu.ben.photoalbumrenaming.exception.FileRenamingException;
-import hu.ben.photoalbumrenaming.model.FileWrapper;
-import hu.ben.photoalbumrenaming.model.ImageFileWrapper;
-import hu.ben.photoalbumrenaming.model.MediaDirectory;
-import hu.ben.photoalbumrenaming.model.MediaWrapper;
-import hu.ben.photoalbumrenaming.model.VideoFileWrapper;
-import hu.ben.photoalbumrenaming.util.PhotoAlbumRenamingUtil;
+import hu.ben.photoalbumorganizer.constant.Constants;
+import hu.ben.photoalbumorganizer.exception.FileRenamingException;
+import hu.ben.photoalbumorganizer.model.FileWrapper;
+import hu.ben.photoalbumorganizer.model.ImageFileWrapper;
+import hu.ben.photoalbumorganizer.model.MediaDirectory;
+import hu.ben.photoalbumorganizer.model.MediaWrapper;
+import hu.ben.photoalbumorganizer.model.VideoFileWrapper;
+import hu.ben.photoalbumorganizer.util.FileUtil;
 
-public class PhotoAlbumRenaming {
+public final class RenamingUtil {
 
     private static final String IMAGE_FILE_NAME_FORMAT_PATTERN = "{0} {1} {2}.{3}";
 
@@ -33,25 +33,27 @@ public class PhotoAlbumRenaming {
 
     private static int NUMBER_OF_FILES_TO_BE_PROCESSED = 0;
 
-    private MediaWrapper mediaWrapper = new MediaWrapper();
+    private static final MediaWrapper mediaWrapper = new MediaWrapper();
 
-    public void renameAlbumFiles(String location) {
-        getFiles(location);
+    private RenamingUtil() {
+    }
+
+    public static void renameAlbumFiles(String containerDirAbsPath) {
+        getFiles(containerDirAbsPath);
         setLatestCreationDates();
         renameFiles();
 
         System.out.println(MessageFormat.format("{0} files renamed.", NUMBER_OF_FILES_TO_BE_PROCESSED));
     }
 
-    private void getFiles(String workingDirectory) {
+    private static void getFiles(String workingDirectory) {
         File[] filesInWorkingDirectory = Objects.requireNonNull(new File(workingDirectory).listFiles());
 
         for (File file : filesInWorkingDirectory) {
             if (!file.isDirectory()) {
                 boolean isFileAnImage =
                     Constants.ALLOWED_IMAGE_FILES.contains(FilenameUtils.getExtension(file.getName()));
-                boolean isFileAVideo =
-                    Constants.ALLOWED_VIDEO_FILES.contains(FilenameUtils.getExtension(file.getName()));
+                boolean isFileAVideo = FileUtil.isFileVideo(file);
 
                 if (isFileAnImage || isFileAVideo) {
                     File parentFile = file.getParentFile();
@@ -84,7 +86,7 @@ public class PhotoAlbumRenaming {
         }
     }
 
-    private void setLatestCreationDates() {
+    private static void setLatestCreationDates() {
         if (!mediaWrapper.getMediaDirectoryList().isEmpty()) {
             for (MediaDirectory mediaDirectory : mediaWrapper.getMediaDirectoryList()) {
                 String latestCreationDate = getLatestCreationDate(mediaDirectory);
@@ -93,7 +95,7 @@ public class PhotoAlbumRenaming {
         }
     }
 
-    private void renameFiles() {
+    private static void renameFiles() {
         ArrayList<MediaDirectory> mediaDirectoryList = mediaWrapper.getMediaDirectoryList();
 
         if (!mediaDirectoryList.isEmpty()) {
@@ -105,21 +107,21 @@ public class PhotoAlbumRenaming {
         }
     }
 
-    private void renameImageFilesInMediaDirectory(MediaDirectory mediaDirectory) {
+    private static void renameImageFilesInMediaDirectory(MediaDirectory mediaDirectory) {
         for (ImageFileWrapper imageFileWrapper : mediaDirectory.getImageFileWrapperList()) {
             SortedSet<File> imageFiles = imageFileWrapper.getImageFiles();
             renameImageOrVideoFiles(imageFileWrapper, imageFiles, mediaDirectory.getDirectoryFile().getName());
         }
     }
 
-    private void renameVideoFilesInMediaDirectory(MediaDirectory mediaDirectory) {
+    private static void renameVideoFilesInMediaDirectory(MediaDirectory mediaDirectory) {
         for (VideoFileWrapper videoFileWrapper : mediaDirectory.getVideoFileWrapperList()) {
             SortedSet<File> videoFiles = videoFileWrapper.getVideoFiles();
             renameImageOrVideoFiles(videoFileWrapper, videoFiles, mediaDirectory.getDirectoryFile().getName());
         }
     }
 
-    private void renameImageOrVideoFiles(
+    private static void renameImageOrVideoFiles(
         FileWrapper fileWrapper,
         SortedSet<File> imageOrVideoFiles,
         String directoryName
@@ -161,16 +163,16 @@ public class PhotoAlbumRenaming {
         }
     }
 
-    private String getFormattedSequentialNumber(int indexOfFileInCollection, int numberOfDigits) {
+    private static String getFormattedSequentialNumber(int indexOfFileInCollection, int numberOfDigits) {
         String pattern = MessageFormat.format(SEQUENTIAL_NUMBER_FORMAT_PATTERN, numberOfDigits);
         return String.format(pattern, indexOfFileInCollection + 1);
     }
 
-    private <T> int getNumberOfDigits(SortedSet<T> list) {
+    private static <T> int getNumberOfDigits(SortedSet<T> list) {
         return list.size() < 1000 ? 3 : String.valueOf(list.size()).length();
     }
 
-    private void renameMediaDirectory(MediaDirectory mediaDirectory) {
+    private static void renameMediaDirectory(MediaDirectory mediaDirectory) {
         File directoryFile = mediaDirectory.getDirectoryFile();
         String directoryAbsolutePath = directoryFile.getAbsolutePath();
         String newFileName =
@@ -178,7 +180,7 @@ public class PhotoAlbumRenaming {
         renameFile(directoryAbsolutePath, newFileName);
     }
 
-    private void renameFile(String absoluteFilePath, String newFileName) {
+    private static void renameFile(String absoluteFilePath, String newFileName) {
         String fullPath = FilenameUtils.getFullPath(absoluteFilePath);
         boolean result = FileUtils
             .getFile(absoluteFilePath)
@@ -189,10 +191,10 @@ public class PhotoAlbumRenaming {
         }
     }
 
-    private void addFileToImageWrapperList(MediaDirectory mediaDirectory, File file) {
+    private static void addFileToImageWrapperList(MediaDirectory mediaDirectory, File file) {
         ArrayList<ImageFileWrapper> imageFileWrapperList = mediaDirectory.getImageFileWrapperList();
 
-        Date imageFileCreationTime = PhotoAlbumRenamingUtil.getImageFileCreationTime(file);
+        Date imageFileCreationTime = FileUtil.getImageFileCreationTime(file);
         if (imageFileWrapperList.isEmpty()) {
             ImageFileWrapper newImageFileWrapper = new ImageFileWrapper();
             newImageFileWrapper.setFileCreationDate(imageFileCreationTime);
@@ -213,10 +215,10 @@ public class PhotoAlbumRenaming {
         }
     }
 
-    private void addFileToVideoWrapperList(MediaDirectory mediaDirectory, File file) {
+    private static void addFileToVideoWrapperList(MediaDirectory mediaDirectory, File file) {
         ArrayList<VideoFileWrapper> videoFileWrapperList = mediaDirectory.getVideoFileWrapperList();
 
-        Date videoFileCreationTime = PhotoAlbumRenamingUtil.getVideoFileCreationTime(file);
+        Date videoFileCreationTime = FileUtil.getVideoFileCreationTime(file);
         if (videoFileWrapperList.isEmpty()) {
             VideoFileWrapper newVideoFileWrapper = new VideoFileWrapper();
             newVideoFileWrapper.setFileCreationDate(videoFileCreationTime);
@@ -237,7 +239,7 @@ public class PhotoAlbumRenaming {
         }
     }
 
-    private <T extends FileWrapper> FileWrapper getFileWrapperWithSameDayIfExists(
+    private static <T extends FileWrapper> FileWrapper getFileWrapperWithSameDayIfExists(
         ArrayList<T> fileWrapperList,
         Date fileCreationTime
     ) {
@@ -251,7 +253,7 @@ public class PhotoAlbumRenaming {
             .orElse(null);
     }
 
-    private MediaDirectory getMediaDirectoryFromMediaWrapperIfExists(File directory) {
+    private static MediaDirectory getMediaDirectoryFromMediaWrapperIfExists(File directory) {
         return mediaWrapper.getMediaDirectoryList()
             .stream()
             .filter(mediaDirectory -> directory.equals(mediaDirectory.getDirectoryFile()))
@@ -259,7 +261,7 @@ public class PhotoAlbumRenaming {
             .orElse(null);
     }
 
-    private String getLatestCreationDate(MediaDirectory mediaDirectory) {
+    private static String getLatestCreationDate(MediaDirectory mediaDirectory) {
         Date latestCreationDate = null;
 
         ArrayList<ImageFileWrapper> imageFileWrapperList = mediaDirectory.getImageFileWrapperList();
@@ -294,7 +296,7 @@ public class PhotoAlbumRenaming {
         return latestCreationDateString;
     }
 
-    private String getFormattedDateString(Date date) {
+    private static String getFormattedDateString(Date date) {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         return formatter.format(date);
     }

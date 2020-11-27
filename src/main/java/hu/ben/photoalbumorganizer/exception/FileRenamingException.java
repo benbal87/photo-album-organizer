@@ -1,4 +1,4 @@
-package hu.ben.photoalbumrenaming.exception;
+package hu.ben.photoalbumorganizer.exception;
 
 public class FileRenamingException extends RuntimeException {
 

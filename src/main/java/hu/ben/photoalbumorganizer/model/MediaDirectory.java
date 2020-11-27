@@ -1,4 +1,4 @@
-package hu.ben.photoalbumrenaming.model;
+package hu.ben.photoalbumorganizer.model;
 
 import java.io.File;
 import java.util.ArrayList;
