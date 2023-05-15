@@ -42,7 +42,6 @@ public final class RenamingUtil {
         getFiles(containerDirAbsPath);
         setLatestCreationDates();
         renameFiles();
-
         System.out.println(MessageFormat.format("{0} files renamed.", NUMBER_OF_FILES_TO_BE_PROCESSED));
     }
 
@@ -296,7 +295,7 @@ public final class RenamingUtil {
         return latestCreationDateString;
     }
 
-    private static String getFormattedDateString(Date date) {
+    public static String getFormattedDateString(Date date) {
         SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
         return formatter.format(date);
     }

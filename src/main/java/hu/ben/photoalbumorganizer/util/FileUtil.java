@@ -7,7 +7,6 @@ import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.nio.file.attribute.FileTime;
-import java.text.MessageFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -34,8 +33,6 @@ import com.drew.metadata.Tag;
 import com.drew.metadata.exif.ExifSubIFDDirectory;
 
 import hu.ben.photoalbumorganizer.constant.Constants;
-import hu.ben.photoalbumorganizer.exception.FileDeletionException;
-import hu.ben.photoalbumorganizer.exception.FileRenamingException;
 
 public final class FileUtil {
 
@@ -56,33 +53,75 @@ public final class FileUtil {
         );
     }
 
+    public static Collection<File> getImageFiles(String directoryLocation) {
+        return FileUtils.listFiles(
+            new File(directoryLocation),
+            getImageFileFilter(),
+            TrueFileFilter.TRUE
+        );
+    }
+
+    public static Collection<File> getImageAndVideoFiles(String directoryLocation) {
+        return FileUtils.listFiles(
+            new File(directoryLocation),
+            getImageAndVideoFileFilter(),
+            TrueFileFilter.TRUE
+        );
+    }
+
     public static WildcardFileFilter getVideoFileFilter() {
+        List<String> wildcardList = getWildCardList(Constants.ALLOWED_VIDEO_FILES);
+        return new WildcardFileFilter(wildcardList);
+    }
+
+    public static WildcardFileFilter getImageFileFilter() {
+        List<String> wildcardList = getWildCardList(Constants.ALLOWED_IMAGE_FILES);
+        return new WildcardFileFilter(wildcardList);
+    }
+
+    public static WildcardFileFilter getImageAndVideoFileFilter() {
+        List<String> videoWildcardList = getWildCardList(Constants.ALLOWED_VIDEO_FILES);
+        List<String> imageWildcardList = getWildCardList(Constants.ALLOWED_IMAGE_FILES);
+        videoWildcardList.addAll(imageWildcardList);
+        return new WildcardFileFilter(videoWildcardList);
+    }
+
+    private static List<String> getWildCardList(List<String> allowedFileExtensions) {
         List<String> wildcardList = new ArrayList<>();
-        for (String allowedVideoFile : Constants.ALLOWED_VIDEO_FILES) {
+        for (String allowedVideoFile : allowedFileExtensions) {
             StringBuilder stringBuilder = new StringBuilder(allowedVideoFile);
             stringBuilder.insert(0, '*');
             String wildcard = stringBuilder.toString();
             wildcardList.add(wildcard);
         }
-        return new WildcardFileFilter(wildcardList);
+        return wildcardList;
     }
 
     public static Date getImageFileCreationTime(File file) {
         Date result = null;
 
         try {
-            System.out.println(file.getAbsolutePath());
             Metadata metadata = ImageMetadataReader.readMetadata(file);
             ExifSubIFDDirectory directory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
 
             if (directory != null) {
-                Date originalFileCreationTime = directory.getDate(ExifSubIFDDirectory.TAG_DATETIME_ORIGINAL);
-                result = correctDate(originalFileCreationTime);
-            } else {
+                Date originalFileCreationTime = directory.getDateOriginal();
+                if (originalFileCreationTime != null) {
+                    result = correctDate(originalFileCreationTime);
+                }
+            }
+
+            if (result == null) {
                 Path filePath = Paths.get(file.getAbsolutePath());
                 BasicFileAttributes basicFileAttributes = Files.readAttributes(filePath, BasicFileAttributes.class);
-                FileTime fileTime = basicFileAttributes.creationTime();
-                result = new Date(fileTime.toMillis());
+                FileTime creationTime = basicFileAttributes.creationTime();
+                FileTime lastModifiedTime = basicFileAttributes.lastModifiedTime();
+                int IS_CREATION_TIME_SMALLER = -1;
+                FileTime fileTime = creationTime.compareTo(lastModifiedTime) == IS_CREATION_TIME_SMALLER
+                    ? creationTime
+                    : lastModifiedTime;
+                ZonedDateTime zd = ZonedDateTime.ofInstant(fileTime.toInstant(), ZoneId.systemDefault());
+                result = Date.from(zd.toInstant());
             }
         } catch (ImageProcessingException | IOException e) {
             e.printStackTrace();
@@ -108,7 +147,7 @@ public final class FileUtil {
                         String tagDescription = tag.getDescription();
 
                         Set<ZoneId> set = new HashSet<>();
-                        set.add(ZoneId.of("Europe/Budapest"));
+                        set.add(ZoneId.systemDefault());
 
                         DateTimeFormatter dateTimeFormatter = new DateTimeFormatterBuilder()
                             // your pattern (weekday, month, day, hour/minute/second)
@@ -129,11 +168,37 @@ public final class FileUtil {
                     }
                 }
             }
-        } catch (ImageProcessingException | IOException e) {
+        } catch (Exception e) {
             e.printStackTrace();
+            result = getDateFromFileName(file);
         }
 
         return result;
+    }
+
+    public static String getDateStringFromFileName(File file) {
+        return file.getName().substring(0, 10);
+    }
+
+    public static String getDateStringFromFileParentDirName(File file) {
+        return file.getParentFile().getName().substring(0, 10);
+    }
+
+    public static Date getDateFromFileName(File file) {
+        String fileName = file.getName();
+        return getDateFromString(fileName);
+    }
+
+    public static Date getDateFromString(String fileName) {
+        String yearString = fileName.substring(0, 4);
+        String monthString = fileName.substring(5, 7);
+        String dayString = fileName.substring(8, 10);
+        int year = Integer.parseInt(yearString);
+        int month = Integer.parseInt(monthString);
+        int day = Integer.parseInt(dayString);
+
+        ZonedDateTime zd = ZonedDateTime.of(year, month, day, 0, 0, 0, 0, ZoneId.systemDefault());
+        return Date.from(zd.toInstant());
     }
 
     public static Date correctDate(Date fileCreationDate) {
@@ -145,55 +210,6 @@ public final class FileUtil {
 
     public static int generateRandomNumber() {
         return (int) ((Math.random() * ((MAX_RANDOM_NUMBER - MIN_RANDOM_NUMBER) + 1)) + MIN_RANDOM_NUMBER);
-    }
-
-    public File moveFile(File file, String destination) {
-        File movedFile;
-        try {
-            String fileName = file.getName();
-            String destinationAbsolutePath = destination + fileName;
-            movedFile = new File(destinationAbsolutePath);
-            FileUtils.moveFile(file, movedFile);
-        } catch (IOException e) {
-            throw new FileRenamingException(MessageFormat.format(
-                "File moving failed! \"{0}\" --> to destination: \"{1}\"",
-                file.getAbsolutePath(),
-                destination
-            ));
-        }
-        return movedFile;
-    }
-
-    public static File renameFile(File file, String modifyName) {
-        File fileWithModifiedName;
-        if (file.getName().equals(modifyName)) {
-            fileWithModifiedName = file;
-        } else {
-            try {
-                String filePath = FilenameUtils.getFullPath(file.getAbsolutePath());
-                String newAbsolutePath = filePath + modifyName;
-                fileWithModifiedName = new File(newAbsolutePath);
-                FileUtils.moveFile(file, fileWithModifiedName);
-            } catch (IOException e) {
-                throw new FileRenamingException(MessageFormat.format(
-                    "File reaming failed! \"{0}\" --> to file name: \"{1}\"",
-                    file.getAbsolutePath(),
-                    modifyName
-                ));
-            }
-        }
-        return fileWithModifiedName;
-    }
-
-    public void deleteFile(File file) {
-        String absolutePath = file.getAbsolutePath();
-        boolean deleteResult = file.delete();
-        if (deleteResult) {
-            System.out.println("File deleted! " + absolutePath);
-        } else {
-            throw new FileDeletionException("Can not delete file: "
-                                            + absolutePath);
-        }
     }
 
 }

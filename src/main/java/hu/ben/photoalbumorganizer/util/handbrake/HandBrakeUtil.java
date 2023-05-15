@@ -11,6 +11,7 @@ import org.apache.commons.io.FilenameUtils;
 
 import hu.ben.photoalbumorganizer.constant.Constants;
 import hu.ben.photoalbumorganizer.util.FileUtil;
+import hu.ben.photoalbumorganizer.util.datecorrection.FileDateCorrectorUtil;
 
 public final class HandBrakeUtil {
 
@@ -22,13 +23,16 @@ public final class HandBrakeUtil {
 
     public static void convertVideoFiles(String containerDirAbsPath) {
         Collection<File> videoFiles = FileUtil.getVideoFiles(containerDirAbsPath);
-
-        for (File file : videoFiles) {
-            convertFile(file);
+        for (File originalVideoFile : videoFiles) {
+            File convertedFile = convertFile(originalVideoFile);
+            if (convertedFile != null && convertedFile.exists()) {
+                FileDateCorrectorUtil.modifyConvertedVideoFileDates(convertedFile, originalVideoFile);
+            }
         }
     }
 
-    private static void convertFile(File file) {
+    private static File convertFile(File file) {
+        File outputFile = null;
         try {
             String input = file.getAbsolutePath();
             String fileNameWithoutExtension = FilenameUtils.removeExtension(file.getName());
@@ -39,9 +43,11 @@ public final class HandBrakeUtil {
             CommandLine cmdLine = CommandLine.parse(command);
             DefaultExecutor executor = new DefaultExecutor();
             int exitValue = executor.execute(cmdLine);
+            outputFile = new File(output);
         } catch (IOException e) {
             e.printStackTrace();
         }
+        return outputFile;
     }
 
     private static String replaceLast(String string, String substring, String replacement) {

@@ -2,7 +2,7 @@ package hu.ben.photoalbumorganizer.organizer;
 
 import java.text.MessageFormat;
 
-import hu.ben.photoalbumorganizer.util.datecorrection.VideoFileDateCorrectorUtil;
+import hu.ben.photoalbumorganizer.util.datecorrection.FileDateCorrectorUtil;
 import hu.ben.photoalbumorganizer.util.handbrake.HandBrakeUtil;
 import hu.ben.photoalbumorganizer.util.rename.RenamingUtil;
 import lombok.AllArgsConstructor;
@@ -21,7 +21,7 @@ public class AlbumOrganizer {
 
         RenamingUtil.renameAlbumFiles(containerDirAbsPath);
         HandBrakeUtil.convertVideoFiles(containerDirAbsPath);
-        VideoFileDateCorrectorUtil.correctDates(containerDirAbsPath);
+        FileDateCorrectorUtil.setFileDatesBasedOnFileName(containerDirAbsPath);
 
         long endTime = System.currentTimeMillis();
         double elapsedTime = (double) (endTime - startTime) / (1000);
