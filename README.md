@@ -15,3 +15,41 @@ After the renaming of the files has been finished the handbrake converting of th
 * The original video files would not be deleted.
 
 After the handbrake process has been finished the exiftool will correct the creation dates of the handbraked videos.
+
+### Project Setup on Windows
+
+#### Install HandBrakeCLI
+
+1. Download HandBrakeCLI: https://handbrake.fr/downloads2.php
+2. Extract it and put the extracted file to an arbitrary folder.
+3. Open the environment variables and create a new entry in the Paths with the containing folder of the HandBrakeCLI.
+4. Open a new command prompt window and try to type HandBrakeCLI.
+5. More information of the usage of the software can be found here: https://handbrake.fr/docs/en/latest/cli/command-line-reference.html
+
+#### Install exiftool
+
+1. Download exiftool windows executable from its website: https://exiftool.org/
+2. Extract it and put the extracted file to an arbitrary folder.
+3. Rename the file to **exiftool.exe**
+4. Open the environment variables and create a new entry in the Paths with the containing folder of the **exiftool.exe**
+5. Open a new command prompt window and try to type **exiftool**
+
+
+exiftool -time:all -G1 -a -s file.jpg
+That will list all the time based tags.  Look down the list to figure out which is the correct on and use that name instead of FileCreateDate in your listed command.
+
+exiftool
+-charset
+filename=UTF8
+-overwrite_original
+-FileCreateDate="1974:06:11 12:00:00"
+-CreateDate="1974:06:11 16:10:49"
+-FileModifyDate="1974:06:11 12:00:00"
+-ModifyDate="1974:06:11 16:10:49"
+-xmp:CreateDate="1974:06:11"
+-xmp:MetadataDate="1974:06:11"
+-xmp:ModifyDate="1974:06:11"
+-xmp:HistoryWhen="1974:06:11 16:10:49"  
+-exif:DateTimeOriginal="1974:06:11 16:10:49"
+-exif:CreateDate="1974:06:11 16:10:49"
+001.jpg
