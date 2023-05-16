@@ -72,6 +72,19 @@ public final class FileDateCorrectorUtil {
         }
     }
 
+    public static void setFileDatesBasedOnDateInParentDirName(String dir) {
+        File dirFile = new File(dir);
+        if (dirFile.exists()) {
+            Collection<File> files = FileUtil.getImageAndVideoFiles(dir);
+            if (!files.isEmpty()) {
+                for (File file : files) {
+                    String date = FileUtil.getDateStringFromFileParentDirName(file);
+                    setFileDates(file, date);
+                }
+            }
+        }
+    }
+
     private static List<File> getHandbrakedVideoFiles(Collection<File> containerDirFiles) {
         List<File> result = new ArrayList<>();
         for (File file : containerDirFiles) {

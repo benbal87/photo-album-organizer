@@ -22,6 +22,7 @@ public class AlbumOrganizer {
         RenamingUtil.renameAlbumFiles(containerDirAbsPath);
         HandBrakeUtil.convertVideoFiles(containerDirAbsPath);
         FileDateCorrectorUtil.setFileDatesBasedOnFileName(containerDirAbsPath);
+//        FileDateCorrectorUtil.setFileDatesBasedOnDateInParentDirName(containerDirAbsPath);
 
         long endTime = System.currentTimeMillis();
         double elapsedTime = (double) (endTime - startTime) / (1000);
