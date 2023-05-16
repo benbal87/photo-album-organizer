@@ -158,7 +158,6 @@ public final class FileDateCorrectorUtil {
                 }
             } else {
                 System.out.println("Not able to set metadata for file: " + file.getAbsolutePath());
-                result = false;
             }
         } else {
             System.out.println("Not able to create temporary file to change metadata.");
