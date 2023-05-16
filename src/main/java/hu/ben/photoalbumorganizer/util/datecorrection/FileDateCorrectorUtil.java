@@ -24,8 +24,11 @@ import hu.ben.photoalbumorganizer.validator.DateValidatorUsingDateFormat;
 
 public final class FileDateCorrectorUtil {
 
-    public static final String EXIFTOOL_DATE_CORRECTION_CMD =
-        "exiftool -charset filename=UTF8 -overwrite_original {0} \"{1}\"";
+    public static final String EXIFTOOL_DATE_CORRECTION_CMD_WITH_UTF8_CHARSET =
+        "exiftool -charset FileName=UTF8 -overwrite_original {0} \"{1}\"";
+
+    public static final String EXIFTOOL_DATE_CORRECTION_CMD_WITH_LATIN_CHARSET =
+        "exiftool -charset FileName=Latin -overwrite_original {0} \"{1}\"";
 
     public static final String[] METADATA = new String[] {
         "-FileCreateDate=\"{0} 12:00:00\"",
@@ -87,53 +90,87 @@ public final class FileDateCorrectorUtil {
     public static void modifyConvertedVideoFileDates(File convertedVideoFile, File originalVideoFile) {
         if (convertedVideoFile.exists()) {
             String date = getVideoFileCreationDateString(convertedVideoFile, originalVideoFile);
-            setDatesInFileMetadata(convertedVideoFile, date);
+            handleDateChangingInFileMetadata(convertedVideoFile, date);
         }
     }
 
     public static void setFileDates(File file, String date) {
-        setDatesInFileMetadata(file, date);
+        System.out.println("-----------------------------------------------------------------------------------------");
+        System.out.println("Attempting to change dates in file metadata: " + file.getAbsolutePath());
+        boolean result = handleDateChangingInFileMetadata(file, date);
+//        System.out.println("result: " + result);
+        if (result) {
+            System.out.println("Metadata modification was successful.");
+            // TODO write successful file changes in a new file
+        }
     }
 
-    public static void setDatesInFileMetadata(File file, String date) {
+    public static boolean handleDateChangingInFileMetadata(File file, String date) {
+        boolean result = true;
         String ext = FilenameUtils.getExtension(file.getName());
         if (Constants.ALLOWED_VIDEO_FILES.contains(ext) || Constants.ALLOWED_IMAGE_FILES.contains(ext)) {
-            // WORKAROUND
-            // It is necessary because unfortunately the exiftool would not handle special characters in
-            // filenames so temporarily the file has to be moved back to root dir and renamed to a simplified name
-            // until this issue has been solved
-            File tmpFile = moveFileWithSimplifiedNameToRoot(file);
-            if (tmpFile != null && tmpFile.exists()) {
-                try {
-                    String dateCorrected = date.replaceAll("-", ":");
-                    String tmpFilePath = tmpFile.getAbsolutePath();
-                    List<String> metadata = Arrays
-                        .stream(METADATA).map(m -> MessageFormat.format(m, dateCorrected)).collect(Collectors.toList());
-                    String metadataJoined = String.join(" ", metadata);
-                    String cmd = MessageFormat.format(EXIFTOOL_DATE_CORRECTION_CMD, metadataJoined, tmpFilePath);
+            result = setDatesInFileMetadata(file, date, EXIFTOOL_DATE_CORRECTION_CMD_WITH_LATIN_CHARSET);
+            if (!result) {
+                System.out.println("Date set with latin charset was unsuccessful. "
+                                   + "File: "
+                                   + file.getAbsolutePath()
+                                   + "Trying it with workaround now...");
+                result = setDatesInFileMetadataWithFileMovingWorkaround(file, date);
+            }
+        } else {
+            System.out.println("File is not allowed to process. Extension not allowed. File: "
+                               + file.getAbsolutePath());
+        }
+        return result;
+    }
 
-                    System.out.println("File to process: " + file.getAbsolutePath());
-                    System.out.println("Date to set in file: " + dateCorrected);
-                    System.out.println("Set dates in file with command: " + cmd);
-                    CommandLine cmdLine = CommandLine.parse(cmd);
-                    DefaultExecutor executor = new DefaultExecutor();
-                    int exitValue = executor.execute(cmdLine);
-                    System.out.println("Modification result: " + exitValue);
-                    System.out.println("-----------------------------------------------------------------------------");
-                } catch (IOException e) {
-                    e.printStackTrace();
-                }
-
+    public static boolean setDatesInFileMetadataWithFileMovingWorkaround(File file, String date) {
+        boolean result = true;
+        // WORKAROUND
+        // It is necessary because unfortunately the exiftool would not handle special characters in
+        // filenames so temporarily the file has to be moved back to root dir and renamed to a simplified name
+        // until this issue has been solved
+        File tmpFile = moveFileWithSimplifiedNameToRoot(file);
+        if (tmpFile != null && tmpFile.exists()) {
+            result = setDatesInFileMetadata(tmpFile, date, EXIFTOOL_DATE_CORRECTION_CMD_WITH_UTF8_CHARSET);
+            if (result) {
                 try {
                     // move file back to original path with original name
                     FileUtils.moveFile(tmpFile, file);
                 } catch (IOException e) {
+                    System.out.println("Moving file to its original location was unsuccessful. File: "
+                                       + file.getAbsolutePath());
                     e.printStackTrace();
+                    result = false;
                 }
+            } else {
+                System.out.println("Not able to set metadata for file: " + file.getAbsolutePath());
+                result = false;
             }
         } else {
-            System.out.println("File is not allowed to process. Extension not allowed. " + file.getAbsolutePath());
+            System.out.println("Not able to create temporary file to change metadata.");
+            result = false;
         }
+        return result;
+    }
+
+    public static boolean setDatesInFileMetadata(File file, String date, String exiftoolCmd) {
+        boolean result = true;
+        try {
+            String dateCorrected = date.replaceAll("-", ":");
+            String tmpFilePath = file.getAbsolutePath();
+            List<String> metadata = Arrays
+                .stream(METADATA).map(m -> MessageFormat.format(m, dateCorrected)).collect(Collectors.toList());
+            String metadataJoined = String.join(" ", metadata);
+            String cmd = MessageFormat.format(exiftoolCmd, metadataJoined, tmpFilePath);
+            CommandLine cmdLine = CommandLine.parse(cmd);
+            DefaultExecutor executor = new DefaultExecutor();
+            executor.execute(cmdLine);
+        } catch (IOException e) {
+            e.printStackTrace();
+            result = false;
+        }
+        return result;
     }
 
     private static File moveFileWithSimplifiedNameToRoot(File file) {
