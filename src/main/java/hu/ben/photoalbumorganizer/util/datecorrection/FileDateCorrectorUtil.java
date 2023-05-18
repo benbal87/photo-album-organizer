@@ -127,7 +127,7 @@ public final class FileDateCorrectorUtil {
                 System.out.println("Date set with latin charset was unsuccessful. "
                                    + "File: "
                                    + file.getAbsolutePath()
-                                   + "Trying it with workaround now...");
+                                   + " -> Trying it with workaround now...");
                 result = setDatesInFileMetadataWithFileMovingWorkaround(file, date);
             }
         } else {
@@ -138,7 +138,7 @@ public final class FileDateCorrectorUtil {
     }
 
     public static boolean setDatesInFileMetadataWithFileMovingWorkaround(File file, String date) {
-        boolean result = true;
+        boolean result;
         // WORKAROUND
         // It is necessary because unfortunately the exiftool would not handle special characters in
         // filenames so temporarily the file has to be moved back to root dir and renamed to a simplified name
@@ -146,24 +146,25 @@ public final class FileDateCorrectorUtil {
         File tmpFile = moveFileWithSimplifiedNameToRoot(file);
         if (tmpFile != null && tmpFile.exists()) {
             result = setDatesInFileMetadata(tmpFile, date, EXIFTOOL_DATE_CORRECTION_CMD_WITH_UTF8_CHARSET);
-            if (result) {
-                try {
-                    // move file back to original path with original name
-                    FileUtils.moveFile(tmpFile, file);
-                } catch (IOException e) {
-                    System.out.println("Moving file to its original location was unsuccessful. File: "
-                                       + file.getAbsolutePath());
-                    e.printStackTrace();
-                    result = false;
-                }
-            } else {
+            if (!result) {
                 System.out.println("Not able to set metadata for file: " + file.getAbsolutePath());
             }
         } else {
             System.out.println("Not able to create temporary file to change metadata.");
             result = false;
         }
+        moveFileBackToItsOriginalLocation(tmpFile, file);
         return result;
+    }
+
+    private static void moveFileBackToItsOriginalLocation(File tmpFile, File originalFile) {
+        try {
+            FileUtils.moveFile(tmpFile, originalFile);
+        } catch (IOException e) {
+            e.printStackTrace();
+            throw new RuntimeException("Moving file to its original location was unsuccessful. File: "
+                                       + originalFile.getAbsolutePath());
+        }
     }
 
     public static boolean setDatesInFileMetadata(File file, String date, String exiftoolCmd) {
@@ -175,6 +176,7 @@ public final class FileDateCorrectorUtil {
                 .stream(METADATA).map(m -> MessageFormat.format(m, dateCorrected)).collect(Collectors.toList());
             String metadataJoined = String.join(" ", metadata);
             String cmd = MessageFormat.format(exiftoolCmd, metadataJoined, tmpFilePath);
+            System.out.println(cmd);
             CommandLine cmdLine = CommandLine.parse(cmd);
             DefaultExecutor executor = new DefaultExecutor();
             executor.execute(cmdLine);
@@ -192,6 +194,14 @@ public final class FileDateCorrectorUtil {
             String rootDirPath = Paths.get(file.getAbsolutePath()).getRoot().toString();
             String tempFileAbsolutePath = MessageFormat.format("{0}temp-file.{1}", rootDirPath, extension);
             tempMovedFile = new File(tempFileAbsolutePath);
+            if (tempMovedFile.exists()) {
+                boolean delete = tempMovedFile.delete();
+                if (delete) {
+                    System.out.println("Previously created temp moved file detected and deleted.");
+                } else {
+                    throw new RuntimeException("Previously created temp moved file detected BUT can not be deleted.");
+                }
+            }
             FileUtils.moveFile(file, tempMovedFile);
         } catch (IOException e) {
             e.printStackTrace();
