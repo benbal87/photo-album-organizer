@@ -5,6 +5,7 @@ import java.text.MessageFormat;
 import hu.ben.photoalbumorganizer.util.datecorrection.FileDateCorrectorUtil;
 import hu.ben.photoalbumorganizer.util.handbrake.HandBrakeUtil;
 import hu.ben.photoalbumorganizer.util.rename.RenamingUtil;
+import hu.ben.photoalbumorganizer.util.rename.RenamingUtilForIphoneFiles;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -14,15 +15,16 @@ import lombok.Setter;
 @AllArgsConstructor
 public class AlbumOrganizer {
 
-    private String containerDirAbsPath;
+    private String workDir;
 
     public void organizeAlbumFiles() {
         long startTime = System.currentTimeMillis();
 
-        RenamingUtil.renameAlbumFiles(containerDirAbsPath);
-        HandBrakeUtil.convertVideoFiles(containerDirAbsPath);
-        FileDateCorrectorUtil.setFileDatesBasedOnFileName(containerDirAbsPath);
-//        FileDateCorrectorUtil.setFileDatesBasedOnDateInParentDirName(containerDirAbsPath);
+        RenamingUtil.renameAlbumFiles(workDir);
+        RenamingUtilForIphoneFiles.renameFilesFromIphone(workDir);
+        HandBrakeUtil.convertVideoFiles(workDir);
+        FileDateCorrectorUtil.setFileDatesBasedOnFileName(workDir);
+        FileDateCorrectorUtil.setFileDatesBasedOnDateInParentDirName(workDir);
 
         long endTime = System.currentTimeMillis();
         double elapsedTime = (double) (endTime - startTime) / (1000);
