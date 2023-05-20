@@ -1,15 +1,22 @@
 package hu.ben.photoalbumorganizer.util;
 
 import java.io.File;
+import java.text.MessageFormat;
+import java.text.ParseException;
 import java.text.SimpleDateFormat;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Date;
 
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
+
 import hu.ben.photoalbumorganizer.validator.DateValidatorUsingDateFormat;
 
 public final class RenameUtil {
+
+    private static final Logger logger = LogManager.getLogger(RenameUtil.class);
 
     public static final String ISO_8601_DATE_FORMAT = "yyyy-MM-dd";
 
@@ -96,9 +103,17 @@ public final class RenameUtil {
     }
 
     public static ZonedDateTime getDateFromDateString(String date, String dateFormat) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
-        ZonedDateTime d = ZonedDateTime.parse(date, formatter);
-        return d.withZoneSameInstant(ZoneId.systemDefault());
+        logger.info(MessageFormat.format(
+            "Trying to get date from date string: \"{0}\" and date format: \"{1}\"",
+            date,
+            dateFormat
+        ));
+        try {
+            Date d = new SimpleDateFormat(dateFormat).parse(date);
+            return ZonedDateTime.ofInstant(d.toInstant(), ZoneId.systemDefault());
+        } catch (ParseException e) {
+            throw new RuntimeException(e);
+        }
     }
 
 }

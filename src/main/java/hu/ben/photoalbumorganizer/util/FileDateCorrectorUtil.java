@@ -24,10 +24,10 @@ public final class FileDateCorrectorUtil {
     private static final Logger logger = LogManager.getLogger(FileDateCorrectorUtil.class);
 
     public static final String EXIFTOOL_DATE_CORRECTION_CMD_WITH_UTF8_CHARSET =
-        "exiftool -charset FileName=UTF8 -overwrite_original {0} \"{1}\"";
+        "exiftool -m -charset FileName=UTF8 -overwrite_original {0} \"{1}\"";
 
     public static final String EXIFTOOL_DATE_CORRECTION_CMD_WITH_LATIN_CHARSET =
-        "exiftool -charset FileName=Latin -overwrite_original {0} \"{1}\"";
+        "exiftool -m -charset FileName=Latin -overwrite_original {0} \"{1}\"";
 
     public static final String[] METADATA = new String[] {
         "-FileCreateDate=\"{0} 12:00:00\"",
@@ -100,7 +100,7 @@ public final class FileDateCorrectorUtil {
         if (result) {
             logger.info("Metadata modification was successful in file: " + file.getAbsolutePath());
         } else {
-            logger.info("Metadata modification was failed in file: " + file.getAbsolutePath());
+            logger.error("Metadata modification was failed in file: " + file.getAbsolutePath());
         }
     }
 
