@@ -3,6 +3,7 @@ package hu.ben.photoalbumorganizer.util;
 import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
+import java.text.DecimalFormat;
 import java.text.MessageFormat;
 import java.time.ZonedDateTime;
 import java.util.Arrays;
@@ -69,10 +70,21 @@ public final class FileDateCorrectorUtil {
         File dirFile = new File(dir);
         if (dirFile.exists()) {
             Collection<File> files = FileUtil.getImageAndVideoFiles(dir);
+            int numberOfFiles = files.size();
+            logger.info("Number of files to be processed: " + numberOfFiles);
             if (!files.isEmpty()) {
+                int processedFiles = 0;
                 for (File file : files) {
                     String date = RenameUtil.getDateStringFromFileName(file);
                     setFileDates(file, date);
+                    processedFiles++;
+                    String progress = new DecimalFormat("0.00").format(((double) processedFiles / numberOfFiles) * 100);
+                    logger.info(MessageFormat.format(
+                        "Metadata correction progress: {0}/{1} | {2}%",
+                        processedFiles,
+                        numberOfFiles,
+                        progress
+                    ));
                 }
             }
         }
