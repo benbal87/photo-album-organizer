@@ -6,7 +6,7 @@ import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
 import hu.ben.photoalbumorganizer.organizer.rename.Rename;
-import hu.ben.photoalbumorganizer.organizer.rename.RenamingUtilForIphoneFiles;
+import hu.ben.photoalbumorganizer.organizer.rename.RenameForIphone;
 import hu.ben.photoalbumorganizer.util.FileDateCorrectorUtil;
 import hu.ben.photoalbumorganizer.util.HandBrakeUtil;
 import hu.ben.photoalbumorganizer.util.LogUtil;
@@ -26,7 +26,7 @@ public class AlbumOrganizer {
     public void organizeAlbumFiles() {
         long startTime = System.currentTimeMillis();
         new Rename().renameAlbumFiles(workDir);
-        RenamingUtilForIphoneFiles.renameFilesFromIphone(workDir);
+        RenameForIphone.renameFiles(workDir);
         HandBrakeUtil.convertVideoFiles(workDir);
         FileDateCorrectorUtil.setFileDatesBasedOnFileName(workDir);
         FileDateCorrectorUtil.setFileDatesBasedOnDateInParentDirName(workDir);

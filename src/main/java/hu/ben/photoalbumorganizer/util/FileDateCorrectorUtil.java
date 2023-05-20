@@ -21,7 +21,7 @@ import hu.ben.photoalbumorganizer.constant.Constants;
 
 public final class FileDateCorrectorUtil {
 
-    private static final Logger logger = LogManager.getLogger(FileUtil.class);
+    private static final Logger logger = LogManager.getLogger(FileDateCorrectorUtil.class);
 
     public static final String EXIFTOOL_DATE_CORRECTION_CMD_WITH_UTF8_CHARSET =
         "exiftool -charset FileName=UTF8 -overwrite_original {0} \"{1}\"";

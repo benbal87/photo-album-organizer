@@ -32,7 +32,7 @@ public class Rename {
 
     private static final String VIDEO = "video";
 
-    private static final String SEQUENTIAL_NUMBER_FORMAT_PATTERN = "%0{0}d";
+    public static final String SEQUENTIAL_NUMBER_FORMAT_PATTERN = "%0{0}d";
 
     private final MediaWrapper mediaWrapper;
 
@@ -148,7 +148,7 @@ public class Rename {
                         extension
                     );
             }
-            renameFile(file.getAbsolutePath(), newFileName);
+            renameFile(file, newFileName);
         }
     }
 
@@ -163,23 +163,31 @@ public class Rename {
 
     private static void renameMediaDirectory(MediaDirectory mediaDirectory) {
         File directoryFile = mediaDirectory.getDirectoryFile();
-        String directoryAbsolutePath = directoryFile.getAbsolutePath();
         String newFileName =
             MessageFormat.format("{0} {1}", mediaDirectory.getLatestCreationDate(), directoryFile.getName());
-        renameFile(directoryAbsolutePath, newFileName);
+        renameFile(directoryFile, newFileName);
     }
 
-    private static void renameFile(String absoluteFilePath, String newFileName) {
+    public static void renameFile(File originalFile, String newFileName) {
+        String absoluteFilePath = originalFile.getAbsolutePath();
         String newFileAbsPath = FilenameUtils.getFullPath(absoluteFilePath) + newFileName;
         logger.info(
             LogUtil.getSeparator()
             + "Attempting to rename file: " + absoluteFilePath + "\n"
             + "New file: " + newFileAbsPath
         );
-        boolean result = FileUtils.getFile(absoluteFilePath).renameTo(FileUtils.getFile(newFileAbsPath));
+        File newFile = FileUtils.getFile(newFileAbsPath);
+        boolean result = originalFile.renameTo(newFile);
         if (result) {
             logger.info("File renaming was successful!");
         } else {
+            logger.error(
+                MessageFormat.format(
+                    "Moving file failed!\n From file: {0}\n To file: {1}",
+                    originalFile.getAbsolutePath(),
+                    newFile.getAbsolutePath()
+                )
+            );
             throw new FileRenamingException("Renaming was unsuccessful. " + absoluteFilePath);
         }
     }
