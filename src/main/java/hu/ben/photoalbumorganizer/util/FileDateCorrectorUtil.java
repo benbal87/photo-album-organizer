@@ -1,4 +1,4 @@
-package hu.ben.photoalbumorganizer.util.datecorrection;
+package hu.ben.photoalbumorganizer.util;
 
 import java.io.File;
 import java.io.IOException;
@@ -17,8 +17,6 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 
 import hu.ben.photoalbumorganizer.constant.Constants;
-import hu.ben.photoalbumorganizer.util.FileUtil;
-import hu.ben.photoalbumorganizer.util.rename.RenamingUtil;
 import hu.ben.photoalbumorganizer.validator.DateValidator;
 import hu.ben.photoalbumorganizer.validator.DateValidatorUsingDateFormat;
 
@@ -213,7 +211,7 @@ public final class FileDateCorrectorUtil {
         String result;
         if (originalFile != null) {
             Date fileCreationDate = FileUtil.getVideoFileCreationTime(originalFile);
-            result = RenamingUtil.getFormattedDateString(fileCreationDate);
+            result = RenameUtil.getFormattedDateString(fileCreationDate);
         } else {
             result = getFileCreationDateFromName(convertedFile);
         }
@@ -224,14 +222,14 @@ public final class FileDateCorrectorUtil {
         String result = null;
         String fileCreationDateRaw = FileUtil.getDateStringFromFileName(file);
         String dateRawFromParentDir = FileUtil.getDateStringFromFileParentDirName(file);
-        DateValidator validator = new DateValidatorUsingDateFormat("yyyy-MM-dd");
+        DateValidator validator = new DateValidatorUsingDateFormat();
         Date fileCreationDate = FileUtil.getVideoFileCreationTime(file);
         if (validator.isValid(fileCreationDateRaw)) {
             result = fileCreationDateRaw.replaceAll("-", ":");
         } else if (validator.isValid(dateRawFromParentDir)) {
             result = dateRawFromParentDir.replaceAll("-", ":");
         } else if (fileCreationDate != null) {
-            result = RenamingUtil.getFormattedDateString(fileCreationDate);
+            result = RenameUtil.getFormattedDateString(fileCreationDate);
         }
         return result;
     }

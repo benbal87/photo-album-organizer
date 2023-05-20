@@ -4,9 +4,15 @@ import java.text.DateFormat;
 import java.text.ParseException;
 import java.text.SimpleDateFormat;
 
+import hu.ben.photoalbumorganizer.util.RenameUtil;
+
 public class DateValidatorUsingDateFormat implements DateValidator {
 
-    private String dateFormat;
+    private final String dateFormat;
+
+    public DateValidatorUsingDateFormat() {
+        this.dateFormat = RenameUtil.ISO_8601_DATE_FORMAT;
+    }
 
     public DateValidatorUsingDateFormat(String dateFormat) {
         this.dateFormat = dateFormat;

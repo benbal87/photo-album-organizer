@@ -5,11 +5,11 @@ import java.text.MessageFormat;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
+import hu.ben.photoalbumorganizer.organizer.rename.Rename;
+import hu.ben.photoalbumorganizer.organizer.rename.RenamingUtilForIphoneFiles;
+import hu.ben.photoalbumorganizer.util.FileDateCorrectorUtil;
+import hu.ben.photoalbumorganizer.util.HandBrakeUtil;
 import hu.ben.photoalbumorganizer.util.LogUtil;
-import hu.ben.photoalbumorganizer.util.datecorrection.FileDateCorrectorUtil;
-import hu.ben.photoalbumorganizer.util.handbrake.HandBrakeUtil;
-import hu.ben.photoalbumorganizer.util.rename.RenamingUtil;
-import hu.ben.photoalbumorganizer.util.rename.RenamingUtilForIphoneFiles;
 import lombok.AllArgsConstructor;
 import lombok.Getter;
 import lombok.Setter;
@@ -25,7 +25,7 @@ public class AlbumOrganizer {
 
     public void organizeAlbumFiles() {
         long startTime = System.currentTimeMillis();
-        RenamingUtil.renameAlbumFiles(workDir);
+        new Rename().renameAlbumFiles(workDir);
         RenamingUtilForIphoneFiles.renameFilesFromIphone(workDir);
         HandBrakeUtil.convertVideoFiles(workDir);
         FileDateCorrectorUtil.setFileDatesBasedOnFileName(workDir);

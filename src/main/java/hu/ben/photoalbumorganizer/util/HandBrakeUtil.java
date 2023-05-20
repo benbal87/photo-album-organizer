@@ -1,4 +1,4 @@
-package hu.ben.photoalbumorganizer.util.handbrake;
+package hu.ben.photoalbumorganizer.util;
 
 import java.io.File;
 import java.io.IOException;
@@ -10,8 +10,6 @@ import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.io.FilenameUtils;
 
 import hu.ben.photoalbumorganizer.constant.Constants;
-import hu.ben.photoalbumorganizer.util.FileUtil;
-import hu.ben.photoalbumorganizer.util.datecorrection.FileDateCorrectorUtil;
 
 public final class HandBrakeUtil {
 

@@ -1,4 +1,4 @@
-package hu.ben.photoalbumorganizer.util.rename;
+package hu.ben.photoalbumorganizer.organizer.rename;
 
 import java.io.File;
 import java.io.IOException;
@@ -15,7 +15,7 @@ import org.apache.commons.io.FilenameUtils;
 
 import hu.ben.photoalbumorganizer.constant.Constants;
 import hu.ben.photoalbumorganizer.util.FileUtil;
-import hu.ben.photoalbumorganizer.validator.DateValidator;
+import hu.ben.photoalbumorganizer.util.RenameUtil;
 import hu.ben.photoalbumorganizer.validator.DateValidatorUsingDateFormat;
 
 public final class RenamingUtilForIphoneFiles {
@@ -44,8 +44,7 @@ public final class RenamingUtilForIphoneFiles {
         if (albumDir.isDirectory()) {
             String folderName = albumDir.getName();
             String dateInFolder = folderName.substring(0, 11);
-            DateValidator validator = new DateValidatorUsingDateFormat("yyyy-MM-dd");
-            result = validator.isValid(dateInFolder) ? folderName.substring(11) : folderName;
+            result = new DateValidatorUsingDateFormat().isValid(dateInFolder) ? folderName.substring(11) : folderName;
         }
         return result;
     }
@@ -57,7 +56,7 @@ public final class RenamingUtilForIphoneFiles {
                 System.out.println("---------------------------------------------------------------------------------");
                 System.out.println(file.getAbsolutePath());
                 Date date = getDateFromFileName(file);
-                String dateStr = RenamingUtil.getFormattedDateString(date);
+                String dateStr = RenameUtil.getFormattedDateString(date);
                 System.out.println("Date String: " + dateStr);
                 String fileExt = FilenameUtils.getExtension(file.getName());
                 System.out.println("File extension: " + fileExt);

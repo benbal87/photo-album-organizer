@@ -1,8 +1,7 @@
-package hu.ben.photoalbumorganizer.util.rename;
+package hu.ben.photoalbumorganizer.organizer.rename;
 
 import java.io.File;
 import java.text.MessageFormat;
-import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
 import java.util.SortedSet;
@@ -22,10 +21,11 @@ import hu.ben.photoalbumorganizer.model.MediaWrapper;
 import hu.ben.photoalbumorganizer.model.VideoFileWrapper;
 import hu.ben.photoalbumorganizer.util.FileUtil;
 import hu.ben.photoalbumorganizer.util.LogUtil;
+import hu.ben.photoalbumorganizer.util.RenameUtil;
 
-public final class RenamingUtil {
+public class Rename {
 
-    private static final Logger logger = LogManager.getLogger(RenamingUtil.class);
+    private static final Logger logger = LogManager.getLogger(Rename.class);
 
     private static final String IMAGE_FILE_NAME_FORMAT_PATTERN = "{0} {1} {2}.{3}";
 
@@ -35,53 +35,62 @@ public final class RenamingUtil {
 
     private static final String SEQUENTIAL_NUMBER_FORMAT_PATTERN = "%0{0}d";
 
-    private static int NUMBER_OF_FILES_TO_BE_PROCESSED = 0;
+    private final MediaWrapper mediaWrapper;
 
-    private static final MediaWrapper MEDIA_WRAPPER = new MediaWrapper();
-
-    private RenamingUtil() {
+    public Rename() {
+        this.mediaWrapper = new MediaWrapper();
     }
 
-    public static void renameAlbumFiles(String workDir) {
+    public Rename(MediaWrapper mediaWrapper) {
+        this.mediaWrapper = mediaWrapper;
+    }
+
+    public MediaWrapper getMediaWrapper() {
+        return mediaWrapper;
+    }
+
+    public void renameAlbumFiles(String workDir) {
         logger.info(LogUtil.getSeparator(3) + "Starting to rename album files in directory: " + workDir);
-        collectFiles(workDir);
-        setLatestCreationDates();
-        renameFiles();
-        logger.info(LogUtil.getSeparator() + NUMBER_OF_FILES_TO_BE_PROCESSED + "files renamed.");
+        collectFiles(workDir, this.mediaWrapper);
+        setLatestCreationDates(this.mediaWrapper);
+        renameFiles(this.mediaWrapper);
+        logger.info(LogUtil.getSeparator() + "Renaming of album files finished!");
     }
 
-    private static void collectFiles(String workDir) {
+    public MediaWrapper collectFiles(String workDir, MediaWrapper mw) {
         logger.info(LogUtil.getSeparator() + "Started to collecting files in directory: " + workDir);
-        getFiles(workDir);
+        getFiles(workDir, mw);
         logger.info("Collecting files finished in directory: " + workDir);
+        logger.info("Number of image and video files collected: " + mw.getNumberOfFiles());
+        return mw;
     }
 
-    private static void getFiles(String workDir) {
+    private static void getFiles(String workDir, MediaWrapper mw) {
         File[] filesInWorkingDirectory = new File(workDir).listFiles();
         if (filesInWorkingDirectory != null) {
             for (File file : filesInWorkingDirectory) {
                 if (!file.isDirectory()) {
-                    addFileToWrapperList(file);
+                    addFileToWrapperList(file, mw);
                 } else if (file.isDirectory()) {
                     logger.info("Starting to collect files in directory: " + file.getAbsolutePath());
-                    getFiles(file.getAbsolutePath());
+                    getFiles(file.getAbsolutePath(), mw);
                 }
             }
         }
     }
 
-    private static void setLatestCreationDates() {
-        if (!MEDIA_WRAPPER.getMediaDirectoryList().isEmpty()) {
-            for (MediaDirectory mediaDirectory : MEDIA_WRAPPER.getMediaDirectoryList()) {
+    public MediaWrapper setLatestCreationDates(MediaWrapper mw) {
+        if (!mw.getMediaDirectoryList().isEmpty()) {
+            for (MediaDirectory mediaDirectory : mw.getMediaDirectoryList()) {
                 String latestCreationDate = getLatestCreationDate(mediaDirectory);
                 mediaDirectory.setLatestCreationDate(latestCreationDate);
             }
         }
+        return mw;
     }
 
-    private static void renameFiles() {
-        ArrayList<MediaDirectory> mediaDirectoryList = MEDIA_WRAPPER.getMediaDirectoryList();
-
+    public MediaWrapper renameFiles(MediaWrapper mw) {
+        ArrayList<MediaDirectory> mediaDirectoryList = mw.getMediaDirectoryList();
         if (!mediaDirectoryList.isEmpty()) {
             for (MediaDirectory mediaDirectory : mediaDirectoryList) {
                 renameImageFilesInMediaDirectory(mediaDirectory);
@@ -89,6 +98,7 @@ public final class RenamingUtil {
                 renameMediaDirectory(mediaDirectory);
             }
         }
+        return mw;
     }
 
     private static void renameImageFilesInMediaDirectory(MediaDirectory mediaDirectory) {
@@ -110,7 +120,7 @@ public final class RenamingUtil {
         SortedSet<File> imageOrVideoFiles,
         String directoryName
     ) {
-        String creationDate = getFormattedDateString(fileWrapper.getFileCreationDate());
+        String creationDate = RenameUtil.getFormattedDateString(fileWrapper.getFileCreationDate());
         int numberOfDigits = getNumberOfDigits(imageOrVideoFiles);
 
         for (File file : imageOrVideoFiles) {
@@ -139,10 +149,6 @@ public final class RenamingUtil {
                         extension
                     );
             }
-            System.out.println("ORIGINAL_FILE_PATH: " + file.getAbsolutePath());
-            System.out.println("NEW_FILE_NAME: " + newFileName);
-            System.out.println("------------------------------------------------------------------------------------");
-
             renameFile(file.getAbsolutePath(), newFileName);
         }
     }
@@ -165,32 +171,35 @@ public final class RenamingUtil {
     }
 
     private static void renameFile(String absoluteFilePath, String newFileName) {
-        String fullPath = FilenameUtils.getFullPath(absoluteFilePath);
-        boolean result = FileUtils
-            .getFile(absoluteFilePath)
-            .renameTo(FileUtils.getFile(fullPath + newFileName));
-        if (!result) {
+        String newFileAbsPath = FilenameUtils.getFullPath(absoluteFilePath) + newFileName;
+        logger.info(
+            LogUtil.getSeparator()
+            + "Attempting to rename file: " + absoluteFilePath + "\n"
+            + "New file: " + newFileAbsPath
+        );
+        boolean result = FileUtils.getFile(absoluteFilePath).renameTo(FileUtils.getFile(newFileAbsPath));
+        if (result) {
+            logger.info("File renaming was successful!");
+        } else {
             throw new FileRenamingException("Renaming was unsuccessful. " + absoluteFilePath);
         }
     }
 
-    private static void addFileToWrapperList(File file) {
+    private static void addFileToWrapperList(File file, MediaWrapper mw) {
         boolean isFileImage = FileUtil.isFileImage(file);
         boolean isFileVideo = FileUtil.isFileVideo(file);
 
         if (isFileImage || isFileVideo) {
             File parentFile = file.getParentFile();
-            MediaDirectory mediaDirectory = getMediaDirectoryFromMediaWrapperIfExists(parentFile);
-
+            MediaDirectory mediaDirectory = getMediaDirectoryFromMediaWrapperIfExists(parentFile, mw);
             if (mediaDirectory == null) {
                 MediaDirectory newMediaDirectory = new MediaDirectory();
                 newMediaDirectory.setDirectoryFile(parentFile);
                 addFileToMediaDirectory(file, newMediaDirectory);
-                MEDIA_WRAPPER.getMediaDirectoryList().add(newMediaDirectory);
+                mw.getMediaDirectoryList().add(newMediaDirectory);
             } else {
                 addFileToMediaDirectory(file, mediaDirectory);
             }
-            NUMBER_OF_FILES_TO_BE_PROCESSED++;
         } else {
             logger.info("File is not considered to be video or image. Excluding file from collection: "
                         + file.getAbsolutePath());
@@ -273,8 +282,8 @@ public final class RenamingUtil {
             .orElse(null);
     }
 
-    private static MediaDirectory getMediaDirectoryFromMediaWrapperIfExists(File directory) {
-        return MEDIA_WRAPPER.getMediaDirectoryList()
+    private static MediaDirectory getMediaDirectoryFromMediaWrapperIfExists(File directory, MediaWrapper mw) {
+        return mw.getMediaDirectoryList()
             .stream()
             .filter(mediaDirectory -> directory.equals(mediaDirectory.getDirectoryFile()))
             .findAny()
@@ -310,15 +319,10 @@ public final class RenamingUtil {
 
         String latestCreationDateString = null;
         if (latestCreationDate != null) {
-            latestCreationDateString = getFormattedDateString(latestCreationDate);
+            latestCreationDateString = RenameUtil.getFormattedDateString(latestCreationDate);
         }
 
         return latestCreationDateString;
-    }
-
-    public static String getFormattedDateString(Date date) {
-        SimpleDateFormat formatter = new SimpleDateFormat("yyyy-MM-dd");
-        return formatter.format(date);
     }
 
 }
