@@ -8,6 +8,14 @@ public final class Constants {
 
     public static final List<String> ALLOWED_IMAGE_FILES = List.of("jpg", "jpeg", "gif");
 
+    public static final String ALLOWED_IMAGE_EXTENSIONS = "[" + String.join(", ", ALLOWED_IMAGE_FILES) + "]";
+
+    public static final String ALLOWED_VIDEO_EXTENSIONS = "[" + String.join(", ", ALLOWED_VIDEO_FILES) + "]";
+
+    public static final String ALLOWED_FILE_EXTENSIONS_INFO =
+        "Allowed image file extensions: " + Constants.ALLOWED_IMAGE_EXTENSIONS + " | "
+        + "Allowed video file extensions: " + Constants.ALLOWED_VIDEO_EXTENSIONS;
+
     public static final String HANDBRAKE_CONVERT_NAME_CONCAT = "__HB";
 
     private Constants() {

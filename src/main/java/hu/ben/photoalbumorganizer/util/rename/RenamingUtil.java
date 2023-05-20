@@ -5,12 +5,13 @@ import java.text.MessageFormat;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Date;
-import java.util.Objects;
 import java.util.SortedSet;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.lang3.time.DateUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import hu.ben.photoalbumorganizer.constant.Constants;
 import hu.ben.photoalbumorganizer.exception.FileRenamingException;
@@ -20,8 +21,11 @@ import hu.ben.photoalbumorganizer.model.MediaDirectory;
 import hu.ben.photoalbumorganizer.model.MediaWrapper;
 import hu.ben.photoalbumorganizer.model.VideoFileWrapper;
 import hu.ben.photoalbumorganizer.util.FileUtil;
+import hu.ben.photoalbumorganizer.util.LogUtil;
 
 public final class RenamingUtil {
+
+    private static final Logger logger = LogManager.getLogger(RenamingUtil.class);
 
     private static final String IMAGE_FILE_NAME_FORMAT_PATTERN = "{0} {1} {2}.{3}";
 
@@ -33,61 +37,42 @@ public final class RenamingUtil {
 
     private static int NUMBER_OF_FILES_TO_BE_PROCESSED = 0;
 
-    private static final MediaWrapper mediaWrapper = new MediaWrapper();
+    private static final MediaWrapper MEDIA_WRAPPER = new MediaWrapper();
 
     private RenamingUtil() {
     }
 
-    public static void renameAlbumFiles(String containerDirAbsPath) {
-        getFiles(containerDirAbsPath);
+    public static void renameAlbumFiles(String workDir) {
+        logger.info(LogUtil.getSeparator(3) + "Starting to rename album files in directory: " + workDir);
+        collectFiles(workDir);
         setLatestCreationDates();
         renameFiles();
-        System.out.println(MessageFormat.format("{0} files renamed.", NUMBER_OF_FILES_TO_BE_PROCESSED));
+        logger.info(LogUtil.getSeparator() + NUMBER_OF_FILES_TO_BE_PROCESSED + "files renamed.");
     }
 
-    private static void getFiles(String workingDirectory) {
-        File[] filesInWorkingDirectory = Objects.requireNonNull(new File(workingDirectory).listFiles());
+    private static void collectFiles(String workDir) {
+        logger.info(LogUtil.getSeparator() + "Started to collecting files in directory: " + workDir);
+        getFiles(workDir);
+        logger.info("Collecting files finished in directory: " + workDir);
+    }
 
-        for (File file : filesInWorkingDirectory) {
-            if (!file.isDirectory()) {
-                boolean isFileAnImage =
-                    Constants.ALLOWED_IMAGE_FILES.contains(FilenameUtils.getExtension(file.getName()));
-                boolean isFileAVideo = FileUtil.isFileVideo(file);
-
-                if (isFileAnImage || isFileAVideo) {
-                    File parentFile = file.getParentFile();
-                    MediaDirectory mediaDirectory = getMediaDirectoryFromMediaWrapperIfExists(parentFile);
-
-                    if (mediaDirectory == null) {
-                        MediaDirectory newMediaDirectory = new MediaDirectory();
-                        newMediaDirectory.setDirectoryFile(parentFile);
-
-                        if (isFileAVideo) {
-                            addFileToVideoWrapperList(newMediaDirectory, file);
-                        } else {
-                            addFileToImageWrapperList(newMediaDirectory, file);
-                        }
-
-                        mediaWrapper.getMediaDirectoryList().add(newMediaDirectory);
-                    } else {
-                        if (isFileAVideo) {
-                            addFileToVideoWrapperList(mediaDirectory, file);
-                        } else {
-                            addFileToImageWrapperList(mediaDirectory, file);
-                        }
-                    }
-
-                    NUMBER_OF_FILES_TO_BE_PROCESSED++;
+    private static void getFiles(String workDir) {
+        File[] filesInWorkingDirectory = new File(workDir).listFiles();
+        if (filesInWorkingDirectory != null) {
+            for (File file : filesInWorkingDirectory) {
+                if (!file.isDirectory()) {
+                    addFileToWrapperList(file);
+                } else if (file.isDirectory()) {
+                    logger.info("Starting to collect files in directory: " + file.getAbsolutePath());
+                    getFiles(file.getAbsolutePath());
                 }
-            } else {
-                getFiles(file.getAbsolutePath());
             }
         }
     }
 
     private static void setLatestCreationDates() {
-        if (!mediaWrapper.getMediaDirectoryList().isEmpty()) {
-            for (MediaDirectory mediaDirectory : mediaWrapper.getMediaDirectoryList()) {
+        if (!MEDIA_WRAPPER.getMediaDirectoryList().isEmpty()) {
+            for (MediaDirectory mediaDirectory : MEDIA_WRAPPER.getMediaDirectoryList()) {
                 String latestCreationDate = getLatestCreationDate(mediaDirectory);
                 mediaDirectory.setLatestCreationDate(latestCreationDate);
             }
@@ -95,7 +80,7 @@ public final class RenamingUtil {
     }
 
     private static void renameFiles() {
-        ArrayList<MediaDirectory> mediaDirectoryList = mediaWrapper.getMediaDirectoryList();
+        ArrayList<MediaDirectory> mediaDirectoryList = MEDIA_WRAPPER.getMediaDirectoryList();
 
         if (!mediaDirectoryList.isEmpty()) {
             for (MediaDirectory mediaDirectory : mediaDirectoryList) {
@@ -184,9 +169,45 @@ public final class RenamingUtil {
         boolean result = FileUtils
             .getFile(absoluteFilePath)
             .renameTo(FileUtils.getFile(fullPath + newFileName));
-
         if (!result) {
             throw new FileRenamingException("Renaming was unsuccessful. " + absoluteFilePath);
+        }
+    }
+
+    private static void addFileToWrapperList(File file) {
+        boolean isFileImage = FileUtil.isFileImage(file);
+        boolean isFileVideo = FileUtil.isFileVideo(file);
+
+        if (isFileImage || isFileVideo) {
+            File parentFile = file.getParentFile();
+            MediaDirectory mediaDirectory = getMediaDirectoryFromMediaWrapperIfExists(parentFile);
+
+            if (mediaDirectory == null) {
+                MediaDirectory newMediaDirectory = new MediaDirectory();
+                newMediaDirectory.setDirectoryFile(parentFile);
+                addFileToMediaDirectory(file, newMediaDirectory);
+                MEDIA_WRAPPER.getMediaDirectoryList().add(newMediaDirectory);
+            } else {
+                addFileToMediaDirectory(file, mediaDirectory);
+            }
+            NUMBER_OF_FILES_TO_BE_PROCESSED++;
+        } else {
+            logger.info("File is not considered to be video or image. Excluding file from collection: "
+                        + file.getAbsolutePath());
+        }
+    }
+
+    private static void addFileToMediaDirectory(File file, MediaDirectory md) {
+        boolean isFileImage = FileUtil.isFileImage(file);
+        boolean isFileVideo = FileUtil.isFileVideo(file);
+        if (isFileVideo) {
+            addFileToVideoWrapperList(md, file);
+        } else if (isFileImage) {
+            addFileToImageWrapperList(md, file);
+        } else {
+            logger.error("File can not be added to media directory! File is not considered to be video or image. "
+                         + file.getAbsolutePath()
+                         + Constants.ALLOWED_FILE_EXTENSIONS_INFO + " ");
         }
     }
 
@@ -253,7 +274,7 @@ public final class RenamingUtil {
     }
 
     private static MediaDirectory getMediaDirectoryFromMediaWrapperIfExists(File directory) {
-        return mediaWrapper.getMediaDirectoryList()
+        return MEDIA_WRAPPER.getMediaDirectoryList()
             .stream()
             .filter(mediaDirectory -> directory.equals(mediaDirectory.getDirectoryFile()))
             .findAny()

@@ -134,6 +134,10 @@ public final class FileUtil {
         return file.isFile() && Constants.ALLOWED_VIDEO_FILES.contains(FilenameUtils.getExtension(file.getName()));
     }
 
+    public static boolean isFileImage(File file) {
+        return file.isFile() && Constants.ALLOWED_IMAGE_FILES.contains(FilenameUtils.getExtension(file.getName()));
+    }
+
     public static Date getVideoFileCreationTime(File file) {
         Date result = null;
 

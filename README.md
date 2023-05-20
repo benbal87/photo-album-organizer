@@ -12,7 +12,7 @@ The directories which containing the media files have to be named customized.
 * The video files will get a "video" string before their numbers.
 * All the files will be numbered by their creation dates.
 
-After the renaming of the files has been finished the HandBrake converting of the video files will start.
+After the renaming of the files have been finished the HandBrake converting of the video files will start.
 
 * It will convert the video files with the quality of 28.
 * All the video files converted with HandBrake will get a "__HB" string added to their file names.
@@ -21,7 +21,7 @@ After the renaming of the files has been finished the HandBrake converting of th
 After the HandBrake process has been finished the exiftool will correct the creation dates of the video files converted
 with HandBrake.
 
-### Project Setup on Windows
+## Project Setup on Windows
 
 #### Install HandBrakeCLI
 
@@ -40,7 +40,7 @@ with HandBrake.
 4. Open the environment variables and create a new entry in the Paths with the containing folder of the **exiftool.exe**
 5. Open a new command prompt window and try to type **exiftool**
 
-Exiftool documentation:
+## Exiftool documentation:
 
     exiftool -time:all -G1 -a -s file.jpg
     That will list all the time based tags.  Look down the list to figure out which is the correct on and use that name instead of FileCreateDate in your listed command.
@@ -79,3 +79,13 @@ Exiftool documentation:
     wide-character i/o routines, thus providing support for Unicode file
     names. See the "WINDOWS UNICODE FILE NAMES" section below for
     details.
+
+## Log4j2 used for logging
+
+There are 6 types of log levels:
+- trace
+- debug
+- info
+- warn
+- error
+- fatal
