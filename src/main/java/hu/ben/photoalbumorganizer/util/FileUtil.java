@@ -24,6 +24,8 @@ import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
 import org.apache.commons.io.filefilter.TrueFileFilter;
 import org.apache.commons.io.filefilter.WildcardFileFilter;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import com.drew.imaging.ImageMetadataReader;
 import com.drew.imaging.ImageProcessingException;
@@ -35,6 +37,8 @@ import com.drew.metadata.exif.ExifSubIFDDirectory;
 import hu.ben.photoalbumorganizer.constant.Constants;
 
 public final class FileUtil {
+
+    private static final Logger logger = LogManager.getLogger(FileUtil.class);
 
     public static final String CREATION_TIME_TAG_NAME = "0x0100";
 
@@ -97,39 +101,6 @@ public final class FileUtil {
         return wildcardList;
     }
 
-    public static Date getImageFileCreationTime(File file) {
-        Date result = null;
-
-        try {
-            Metadata metadata = ImageMetadataReader.readMetadata(file);
-            ExifSubIFDDirectory directory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
-
-            if (directory != null) {
-                Date originalFileCreationTime = directory.getDateOriginal();
-                if (originalFileCreationTime != null) {
-                    result = correctDate(originalFileCreationTime);
-                }
-            }
-
-            if (result == null) {
-                Path filePath = Paths.get(file.getAbsolutePath());
-                BasicFileAttributes basicFileAttributes = Files.readAttributes(filePath, BasicFileAttributes.class);
-                FileTime creationTime = basicFileAttributes.creationTime();
-                FileTime lastModifiedTime = basicFileAttributes.lastModifiedTime();
-                int IS_CREATION_TIME_SMALLER = -1;
-                FileTime fileTime = creationTime.compareTo(lastModifiedTime) == IS_CREATION_TIME_SMALLER
-                    ? creationTime
-                    : lastModifiedTime;
-                ZonedDateTime zd = ZonedDateTime.ofInstant(fileTime.toInstant(), ZoneId.systemDefault());
-                result = Date.from(zd.toInstant());
-            }
-        } catch (ImageProcessingException | IOException e) {
-            e.printStackTrace();
-        }
-
-        return result;
-    }
-
     public static boolean isFileVideo(File file) {
         return file.isFile() && Constants.ALLOWED_VIDEO_FILES.contains(FilenameUtils.getExtension(file.getName()));
     }
@@ -138,9 +109,32 @@ public final class FileUtil {
         return file.isFile() && Constants.ALLOWED_IMAGE_FILES.contains(FilenameUtils.getExtension(file.getName()));
     }
 
-    public static Date getVideoFileCreationTime(File file) {
-        Date result = null;
+    public static ZonedDateTime getImageFileCreationTime(File file) {
+        try {
+            Metadata metadata = ImageMetadataReader.readMetadata(file);
+            ExifSubIFDDirectory directory = metadata.getFirstDirectoryOfType(ExifSubIFDDirectory.class);
+            if (directory != null) {
+                Date originalFileCreationTime = directory.getDateOriginal();
+                if (originalFileCreationTime != null) {
+                    return ZonedDateTime.ofInstant(originalFileCreationTime.toInstant(), ZoneId.systemDefault());
+                }
+            }
 
+            Path filePath = Paths.get(file.getAbsolutePath());
+            BasicFileAttributes basicFileAttributes = Files.readAttributes(filePath, BasicFileAttributes.class);
+            FileTime creationTime = basicFileAttributes.creationTime();
+            FileTime lastModifiedTime = basicFileAttributes.lastModifiedTime();
+            int IS_CREATION_TIME_SMALLER = -1;
+            FileTime fileTime = creationTime.compareTo(lastModifiedTime) == IS_CREATION_TIME_SMALLER
+                ? creationTime
+                : lastModifiedTime;
+            return ZonedDateTime.ofInstant(fileTime.toInstant(), ZoneId.systemDefault());
+        } catch (ImageProcessingException | IOException e) {
+            return getFileCreationTimeFromFileName(file, e);
+        }
+    }
+
+    public static ZonedDateTime getVideoFileCreationTime(File file) {
         try {
             Metadata metadata = ImageMetadataReader.readMetadata(file);
             for (Directory directory : metadata.getDirectories()) {
@@ -166,18 +160,24 @@ public final class FileUtil {
                             // correctly)
                             .toFormatter(Locale.ENGLISH);
 
-                        ZonedDateTime fileCreationZoneDateTime = ZonedDateTime.parse(tagDescription, dateTimeFormatter);
-                        Date fileCreationDate = Date.from(fileCreationZoneDateTime.toInstant());
-                        result = correctDate(fileCreationDate);
+                        return ZonedDateTime.parse(tagDescription, dateTimeFormatter);
                     }
                 }
             }
         } catch (Exception e) {
-            e.printStackTrace();
-            result = getDateFromFileName(file);
+            return getFileCreationTimeFromFileName(file, e);
         }
 
-        return result;
+        return getFileCreationTimeFromFileName(file, null);
+    }
+
+    private static ZonedDateTime getFileCreationTimeFromFileName(File file, Exception e) {
+        logger.warn("Can not get file creation time from video metadata. " + file.getAbsolutePath());
+        if (e != null) {
+            logger.warn(e.toString());
+        }
+        logger.info("Trying to get file creation time from file name. " + file.getAbsolutePath());
+        return RenameUtil.getDateFromFileName(file);
     }
 
     public static String getDateStringFromFileName(File file) {
@@ -186,23 +186,6 @@ public final class FileUtil {
 
     public static String getDateStringFromFileParentDirName(File file) {
         return file.getParentFile().getName().substring(0, 10);
-    }
-
-    public static Date getDateFromFileName(File file) {
-        String fileName = file.getName();
-        return getDateFromString(fileName);
-    }
-
-    public static Date getDateFromString(String fileName) {
-        String yearString = fileName.substring(0, 4);
-        String monthString = fileName.substring(5, 7);
-        String dayString = fileName.substring(8, 10);
-        int year = Integer.parseInt(yearString);
-        int month = Integer.parseInt(monthString);
-        int day = Integer.parseInt(dayString);
-
-        ZonedDateTime zd = ZonedDateTime.of(year, month, day, 0, 0, 0, 0, ZoneId.systemDefault());
-        return Date.from(zd.toInstant());
     }
 
     public static Date correctDate(Date fileCreationDate) {

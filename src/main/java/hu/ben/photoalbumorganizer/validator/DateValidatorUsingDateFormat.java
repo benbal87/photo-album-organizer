@@ -8,13 +8,21 @@ import hu.ben.photoalbumorganizer.util.RenameUtil;
 
 public class DateValidatorUsingDateFormat implements DateValidator {
 
-    private final String dateFormat;
+    private String dateFormat;
 
     public DateValidatorUsingDateFormat() {
         this.dateFormat = RenameUtil.ISO_8601_DATE_FORMAT;
     }
 
     public DateValidatorUsingDateFormat(String dateFormat) {
+        this.dateFormat = dateFormat;
+    }
+
+    public String getDateFormat() {
+        return dateFormat;
+    }
+
+    public void setDateFormat(String dateFormat) {
         this.dateFormat = dateFormat;
     }
 

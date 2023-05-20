@@ -2,13 +2,12 @@ package hu.ben.photoalbumorganizer.organizer.rename;
 
 import java.io.File;
 import java.text.MessageFormat;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
-import java.util.Date;
 import java.util.SortedSet;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
-import org.apache.commons.lang3.time.DateUtils;
 import org.apache.logging.log4j.LogManager;
 import org.apache.logging.log4j.Logger;
 
@@ -221,9 +220,10 @@ public class Rename {
     }
 
     private static void addFileToImageWrapperList(MediaDirectory mediaDirectory, File file) {
+        logger.info("Adding file to image file wrapper list: " + file.getAbsolutePath());
         ArrayList<ImageFileWrapper> imageFileWrapperList = mediaDirectory.getImageFileWrapperList();
 
-        Date imageFileCreationTime = FileUtil.getImageFileCreationTime(file);
+        ZonedDateTime imageFileCreationTime = FileUtil.getImageFileCreationTime(file);
         if (imageFileWrapperList.isEmpty()) {
             ImageFileWrapper newImageFileWrapper = new ImageFileWrapper();
             newImageFileWrapper.setFileCreationDate(imageFileCreationTime);
@@ -245,9 +245,10 @@ public class Rename {
     }
 
     private static void addFileToVideoWrapperList(MediaDirectory mediaDirectory, File file) {
+        logger.info("Adding file to video file wrapper list: " + file.getAbsolutePath());
         ArrayList<VideoFileWrapper> videoFileWrapperList = mediaDirectory.getVideoFileWrapperList();
 
-        Date videoFileCreationTime = FileUtil.getVideoFileCreationTime(file);
+        ZonedDateTime videoFileCreationTime = FileUtil.getVideoFileCreationTime(file);
         if (videoFileWrapperList.isEmpty()) {
             VideoFileWrapper newVideoFileWrapper = new VideoFileWrapper();
             newVideoFileWrapper.setFileCreationDate(videoFileCreationTime);
@@ -270,14 +271,11 @@ public class Rename {
 
     private static <T extends FileWrapper> FileWrapper getFileWrapperWithSameDayIfExists(
         ArrayList<T> fileWrapperList,
-        Date fileCreationTime
+        ZonedDateTime fileCreationTime
     ) {
         return fileWrapperList
             .stream()
-            .filter(fileWrapper -> DateUtils.isSameDay(
-                fileCreationTime,
-                fileWrapper.getFileCreationDate()
-            ))
+            .filter(fileWrapper -> fileCreationTime.isEqual(fileWrapper.getFileCreationDate()))
             .findAny()
             .orElse(null);
     }
@@ -291,15 +289,16 @@ public class Rename {
     }
 
     private static String getLatestCreationDate(MediaDirectory mediaDirectory) {
-        Date latestCreationDate = null;
+        ZonedDateTime latestCreationDate = null;
 
         ArrayList<ImageFileWrapper> imageFileWrapperList = mediaDirectory.getImageFileWrapperList();
         if (!imageFileWrapperList.isEmpty()) {
             for (ImageFileWrapper imageFileWrapper : mediaDirectory.getImageFileWrapperList()) {
-                Date fileCreationDate = imageFileWrapper.getFileCreationDate();
+                ZonedDateTime fileCreationDate = imageFileWrapper.getFileCreationDate();
                 if (latestCreationDate == null) {
                     latestCreationDate = fileCreationDate;
-                } else if (fileCreationDate.after(latestCreationDate)) {
+                } else if (fileCreationDate.isAfter(latestCreationDate)
+                           || fileCreationDate.isEqual(latestCreationDate)) {
                     latestCreationDate = fileCreationDate;
                 }
             }
@@ -308,10 +307,11 @@ public class Rename {
         ArrayList<VideoFileWrapper> videoFileWrapperList = mediaDirectory.getVideoFileWrapperList();
         if (!videoFileWrapperList.isEmpty()) {
             for (VideoFileWrapper videoFileWrapper : mediaDirectory.getVideoFileWrapperList()) {
-                Date fileCreationDate = videoFileWrapper.getFileCreationDate();
+                ZonedDateTime fileCreationDate = videoFileWrapper.getFileCreationDate();
                 if (latestCreationDate == null) {
                     latestCreationDate = fileCreationDate;
-                } else if (fileCreationDate.after(latestCreationDate)) {
+                } else if (fileCreationDate.isAfter(latestCreationDate)
+                           || fileCreationDate.isEqual(latestCreationDate)) {
                     latestCreationDate = fileCreationDate;
                 }
             }

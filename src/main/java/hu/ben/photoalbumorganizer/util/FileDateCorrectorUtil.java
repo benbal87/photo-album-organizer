@@ -4,10 +4,10 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
+import java.time.ZonedDateTime;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.Date;
 import java.util.List;
 import java.util.stream.Collectors;
 
@@ -210,7 +210,7 @@ public final class FileDateCorrectorUtil {
     private static String getVideoFileCreationDateString(File convertedFile, File originalFile) {
         String result;
         if (originalFile != null) {
-            Date fileCreationDate = FileUtil.getVideoFileCreationTime(originalFile);
+            ZonedDateTime fileCreationDate = FileUtil.getVideoFileCreationTime(originalFile);
             result = RenameUtil.getFormattedDateString(fileCreationDate);
         } else {
             result = getFileCreationDateFromName(convertedFile);
@@ -223,7 +223,7 @@ public final class FileDateCorrectorUtil {
         String fileCreationDateRaw = FileUtil.getDateStringFromFileName(file);
         String dateRawFromParentDir = FileUtil.getDateStringFromFileParentDirName(file);
         DateValidator validator = new DateValidatorUsingDateFormat();
-        Date fileCreationDate = FileUtil.getVideoFileCreationTime(file);
+        ZonedDateTime fileCreationDate = FileUtil.getVideoFileCreationTime(file);
         if (validator.isValid(fileCreationDateRaw)) {
             result = fileCreationDateRaw.replaceAll("-", ":");
         } else if (validator.isValid(dateRawFromParentDir)) {

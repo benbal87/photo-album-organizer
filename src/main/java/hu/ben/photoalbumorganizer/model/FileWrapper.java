@@ -1,7 +1,7 @@
 package hu.ben.photoalbumorganizer.model;
 
 import java.io.File;
-import java.util.Date;
+import java.time.ZonedDateTime;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
@@ -20,7 +20,7 @@ import lombok.ToString;
 @NoArgsConstructor
 public class FileWrapper {
 
-    private Date fileCreationDate;
+    private ZonedDateTime fileCreationDate;
 
     private SortedSet<File> imageFiles = new TreeSet<>(new ImageCreationTimeComparator());
 
