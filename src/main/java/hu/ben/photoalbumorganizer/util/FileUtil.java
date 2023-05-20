@@ -12,13 +12,13 @@ import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.format.DateTimeFormatterBuilder;
 import java.time.format.TextStyle;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Date;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
@@ -50,63 +50,62 @@ public final class FileUtil {
     }
 
     public static Collection<File> getVideoFiles(String directoryLocation) {
-        return FileUtils.listFiles(
-            new File(directoryLocation),
-            getVideoFileFilter(),
-            TrueFileFilter.TRUE
-        );
+        return FileUtils.listFiles(new File(directoryLocation), getVideoFileFilter(), TrueFileFilter.TRUE);
+    }
+
+    public static Collection<File> getConvertedVideoFiles(String directoryLocation) {
+        return FileUtils.listFiles(new File(directoryLocation), getConvertedVideoFileFilter(), TrueFileFilter.TRUE);
     }
 
     public static Collection<File> getImageFiles(String directoryLocation) {
-        return FileUtils.listFiles(
-            new File(directoryLocation),
-            getImageFileFilter(),
-            TrueFileFilter.TRUE
-        );
+        return FileUtils.listFiles(new File(directoryLocation), getImageFileFilter(), TrueFileFilter.TRUE);
     }
 
     public static Collection<File> getImageAndVideoFiles(String directoryLocation) {
-        return FileUtils.listFiles(
-            new File(directoryLocation),
-            getImageAndVideoFileFilter(),
-            TrueFileFilter.TRUE
-        );
+        return FileUtils.listFiles(new File(directoryLocation), getImageAndVideoFileFilter(), TrueFileFilter.TRUE);
     }
 
     public static WildcardFileFilter getVideoFileFilter() {
-        List<String> wildcardList = getWildCardList(Constants.ALLOWED_VIDEO_FILES);
+        List<String> wildcardList = getWildCardList(Constants.ALLOWED_VIDEO_FILES, null);
+        return new WildcardFileFilter(wildcardList);
+    }
+
+    public static WildcardFileFilter getConvertedVideoFileFilter() {
+        List<String> wildcardList =
+            getWildCardList(Constants.ALLOWED_VIDEO_FILES, "*" + Constants.VIDEO_CONVERSION_SUFFIX + ".");
         return new WildcardFileFilter(wildcardList);
     }
 
     public static WildcardFileFilter getImageFileFilter() {
-        List<String> wildcardList = getWildCardList(Constants.ALLOWED_IMAGE_FILES);
+        List<String> wildcardList = getWildCardList(Constants.ALLOWED_IMAGE_FILES, null);
         return new WildcardFileFilter(wildcardList);
     }
 
     public static WildcardFileFilter getImageAndVideoFileFilter() {
-        List<String> videoWildcardList = getWildCardList(Constants.ALLOWED_VIDEO_FILES);
-        List<String> imageWildcardList = getWildCardList(Constants.ALLOWED_IMAGE_FILES);
+        List<String> videoWildcardList = getWildCardList(Constants.ALLOWED_VIDEO_FILES, null);
+        List<String> imageWildcardList = getWildCardList(Constants.ALLOWED_IMAGE_FILES, null);
         videoWildcardList.addAll(imageWildcardList);
         return new WildcardFileFilter(videoWildcardList);
     }
 
-    private static List<String> getWildCardList(List<String> allowedFileExtensions) {
-        List<String> wildcardList = new ArrayList<>();
-        for (String allowedVideoFile : allowedFileExtensions) {
-            StringBuilder stringBuilder = new StringBuilder(allowedVideoFile);
-            stringBuilder.insert(0, '*');
-            String wildcard = stringBuilder.toString();
-            wildcardList.add(wildcard);
-        }
-        return wildcardList;
+    private static List<String> getWildCardList(List<String> allowedFileExtensions, String prefix) {
+        String prefixCorrected = prefix == null ? "*." : prefix;
+        return allowedFileExtensions
+            .stream()
+            .map(ext -> prefixCorrected + ext)
+            .collect(Collectors.toList());
     }
 
     public static boolean isFileVideo(File file) {
-        return file.isFile() && Constants.ALLOWED_VIDEO_FILES.contains(FilenameUtils.getExtension(file.getName()));
+        return file != null
+               && file.isFile()
+               && Constants.ALLOWED_VIDEO_FILES.contains(FilenameUtils.getExtension(file.getName()));
     }
 
     public static boolean isFileImage(File file) {
-        return file.isFile() && Constants.ALLOWED_IMAGE_FILES.contains(FilenameUtils.getExtension(file.getName()));
+        return file != null
+               && file.isFile()
+               && Constants.ALLOWED_IMAGE_FILES.contains(FilenameUtils.getExtension(file.getName()));
     }
 
     public static ZonedDateTime getImageFileCreationTime(File file) {
@@ -172,31 +171,28 @@ public final class FileUtil {
     }
 
     private static ZonedDateTime getFileCreationTimeFromFileName(File file, Exception e) {
-        logger.warn("Can not get file creation time from video metadata. " + file.getAbsolutePath());
+        String path = file.getAbsolutePath();
+        logger.warn("Can not get file creation time from video metadata. " + path);
         if (e != null) {
             logger.warn(e.toString());
         }
-        logger.info("Trying to get file creation time from file name. " + file.getAbsolutePath());
-        return RenameUtil.getDateFromFileName(file);
+        logger.info("Trying to get file creation time from file name. " + path);
+        ZonedDateTime dateFromFileName = RenameUtil.getDateFromFileName(file);
+        if (dateFromFileName == null) {
+            logger.warn("Did not succeed to retrieve date from file name: " + path);
+        }
+        return dateFromFileName;
     }
 
-    public static String getDateStringFromFileName(File file) {
-        return file.getName().substring(0, 10);
-    }
+//    public static Date correctDate(Date fileCreationDate) {
+//        long time = fileCreationDate.getTime();
+//        int randomNumber = generateRandomNumber();
+//
+//        return new Date(time + randomNumber);
+//    }
 
-    public static String getDateStringFromFileParentDirName(File file) {
-        return file.getParentFile().getName().substring(0, 10);
-    }
-
-    public static Date correctDate(Date fileCreationDate) {
-        long time = fileCreationDate.getTime();
-        int randomNumber = generateRandomNumber();
-
-        return new Date(time + randomNumber);
-    }
-
-    public static int generateRandomNumber() {
-        return (int) ((Math.random() * ((MAX_RANDOM_NUMBER - MIN_RANDOM_NUMBER) + 1)) + MIN_RANDOM_NUMBER);
-    }
+//    public static int generateRandomNumber() {
+//        return (int) ((Math.random() * ((MAX_RANDOM_NUMBER - MIN_RANDOM_NUMBER) + 1)) + MIN_RANDOM_NUMBER);
+//    }
 
 }

@@ -13,6 +13,8 @@ public final class RenameUtil {
 
     public static final String ISO_8601_DATE_FORMAT = "yyyy-MM-dd";
 
+    public static final String ISO_8601_DATE_FORMAT_WITHOUT_DASH = "yyyyMMdd";
+
     public static final String DAY_MONTH_YEAR_DATE_FORMAT = "yyyy-MM-dd";
 
     private RenameUtil() {
@@ -37,7 +39,14 @@ public final class RenameUtil {
 
     public static ZonedDateTime getDateFromFileName(File file) {
         String dateString = getDateStringFromFileName(file);
-        return getDateFromDateString(dateString);
+        if (dateString != null) {
+            return getDateFromDateString(dateString);
+        }
+        return null;
+    }
+
+    public static String getDateStringFromFileParentDirName(File file) {
+        return getDateStringFromFileName(file.getParentFile());
     }
 
     public static String getDateStringFromFileName(File file) {
@@ -50,7 +59,15 @@ public final class RenameUtil {
 
     public static String getDateStringFromFileName(String fileName) {
         if (fileName.length() > 9) {
-            String possibleDateStr = fileName.substring(0, 10);
+            // Trying the possible unprocessed file: 20230520_120250.jpg
+            String possibleDateStr = fileName.substring(0, 9);
+            if (new DateValidatorUsingDateFormat(ISO_8601_DATE_FORMAT_WITHOUT_DASH).isValid(possibleDateStr)) {
+                ZonedDateTime zd = getDateFromDateString(possibleDateStr, ISO_8601_DATE_FORMAT_WITHOUT_DASH);
+                return getFormattedDateString(zd);
+            }
+
+            // Trying the possible already processed file or folder name with date: 2022-11-28 Holiday at the Bahamas
+            possibleDateStr = fileName.substring(0, 10);
             if (new DateValidatorUsingDateFormat().isValid(possibleDateStr)) {
                 ZonedDateTime zd = getDateFromDateString(possibleDateStr);
                 return getFormattedDateString(zd);
@@ -67,7 +84,7 @@ public final class RenameUtil {
                     return getFormattedDateString(zd, DAY_MONTH_YEAR_DATE_FORMAT);
                 }
             } catch (Exception e) {
-                e.printStackTrace();
+                // logging anything in catch is redundant
             }
         }
 

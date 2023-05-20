@@ -16,7 +16,7 @@ public final class Constants {
         "Allowed image file extensions: " + Constants.ALLOWED_IMAGE_EXTENSIONS + " | "
         + "Allowed video file extensions: " + Constants.ALLOWED_VIDEO_EXTENSIONS;
 
-    public static final String HANDBRAKE_CONVERT_NAME_CONCAT = "__HB";
+    public static final String VIDEO_CONVERSION_SUFFIX = "__conv";
 
     private Constants() {
     }

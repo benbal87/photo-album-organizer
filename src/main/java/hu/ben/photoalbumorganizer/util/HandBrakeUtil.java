@@ -34,7 +34,7 @@ public final class HandBrakeUtil {
         try {
             String input = file.getAbsolutePath();
             String fileNameWithoutExtension = FilenameUtils.removeExtension(file.getName());
-            String fileNameWithoutExtensionRenamed = fileNameWithoutExtension + Constants.HANDBRAKE_CONVERT_NAME_CONCAT;
+            String fileNameWithoutExtensionRenamed = fileNameWithoutExtension + Constants.VIDEO_CONVERSION_SUFFIX;
             String output = replaceLast(input, fileNameWithoutExtension, fileNameWithoutExtensionRenamed);
             System.out.println(output);
             String command = MessageFormat.format(handbrakeCommandTemplate, input, output);

@@ -5,7 +5,6 @@ import java.io.IOException;
 import java.nio.file.Paths;
 import java.text.MessageFormat;
 import java.time.ZonedDateTime;
-import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
@@ -15,12 +14,14 @@ import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecutor;
 import org.apache.commons.io.FileUtils;
 import org.apache.commons.io.FilenameUtils;
+import org.apache.logging.log4j.LogManager;
+import org.apache.logging.log4j.Logger;
 
 import hu.ben.photoalbumorganizer.constant.Constants;
-import hu.ben.photoalbumorganizer.validator.DateValidator;
-import hu.ben.photoalbumorganizer.validator.DateValidatorUsingDateFormat;
 
 public final class FileDateCorrectorUtil {
+
+    private static final Logger logger = LogManager.getLogger(FileUtil.class);
 
     public static final String EXIFTOOL_DATE_CORRECTION_CMD_WITH_UTF8_CHARSET =
         "exiftool -charset FileName=UTF8 -overwrite_original {0} \"{1}\"";
@@ -45,15 +46,21 @@ public final class FileDateCorrectorUtil {
     }
 
     // TODO: decide if method should be deleted of provide a usage
-    public static void correctDatesOfConvertedVideoFiles(String containerDirAbsPath) {
-        File containerDir = new File(containerDirAbsPath);
-        Collection<File> containerDirFiles = FileUtil.getVideoFiles(containerDir.getAbsolutePath());
-        if (containerDirFiles.size() > 0) {
-            List<File> handbrakedVideoFiles = getHandbrakedVideoFiles(containerDirFiles);
-            for (File handbrakedVideoFile : handbrakedVideoFiles) {
-                System.out.println(handbrakedVideoFile.getAbsolutePath());
-                modifyConvertedVideoFileDates(handbrakedVideoFile, null);
-            }
+    public static void correctDatesOfConvertedVideoFiles(String workDir) {
+        logger.info("Starting to correct converted video file dates in directory: " + workDir);
+        Collection<File> convertedVideoFiles = FileUtil.getConvertedVideoFiles(workDir);
+        for (File file : convertedVideoFiles) {
+            modifyConvertedVideoFileDates(file, null);
+        }
+    }
+
+    public static void modifyConvertedVideoFileDates(File convertedVideoFile, File originalVideoFile) {
+        if (convertedVideoFile.exists()) {
+            String date = getVideoFileCreationDateString(convertedVideoFile, originalVideoFile);
+            setFileDates(convertedVideoFile, date);
+        } else {
+            logger.warn("Can not correct date in video file. Converted video file doesn't exist! "
+                        + convertedVideoFile.getAbsolutePath());
         }
     }
 
@@ -63,7 +70,7 @@ public final class FileDateCorrectorUtil {
             Collection<File> files = FileUtil.getImageAndVideoFiles(dir);
             if (!files.isEmpty()) {
                 for (File file : files) {
-                    String date = FileUtil.getDateStringFromFileName(file);
+                    String date = RenameUtil.getDateStringFromFileName(file);
                     setFileDates(file, date);
                 }
             }
@@ -76,43 +83,20 @@ public final class FileDateCorrectorUtil {
             Collection<File> files = FileUtil.getImageAndVideoFiles(dir);
             if (!files.isEmpty()) {
                 for (File file : files) {
-                    String date = FileUtil.getDateStringFromFileParentDirName(file);
+                    String date = RenameUtil.getDateStringFromFileParentDirName(file);
                     setFileDates(file, date);
                 }
             }
         }
     }
 
-    private static List<File> getHandbrakedVideoFiles(Collection<File> containerDirFiles) {
-        List<File> result = new ArrayList<>();
-        for (File file : containerDirFiles) {
-            if (isFileHandbraked(file)) {
-                result.add(file);
-            }
-        }
-        return result;
-    }
-
-    private static boolean isFileHandbraked(File file) {
-        String fileNameWithoutExtension = FilenameUtils.removeExtension(file.getName());
-        return fileNameWithoutExtension.endsWith(Constants.HANDBRAKE_CONVERT_NAME_CONCAT);
-    }
-
-    public static void modifyConvertedVideoFileDates(File convertedVideoFile, File originalVideoFile) {
-        if (convertedVideoFile.exists()) {
-            String date = getVideoFileCreationDateString(convertedVideoFile, originalVideoFile);
-            handleDateChangingInFileMetadata(convertedVideoFile, date);
-        }
-    }
-
     public static void setFileDates(File file, String date) {
-        System.out.println("-----------------------------------------------------------------------------------------");
-        System.out.println("Attempting to change dates in file metadata: " + file.getAbsolutePath());
+        logger.info(LogUtil.getSeparator() + "Attempting to change dates in file metadata: " + file.getAbsolutePath());
         boolean result = handleDateChangingInFileMetadata(file, date);
-//        System.out.println("result: " + result);
         if (result) {
-            System.out.println("Metadata modification was successful.");
-            // TODO write successful file changes in a new file
+            logger.info("Metadata modification was successful in file: " + file.getAbsolutePath());
+        } else {
+            logger.info("Metadata modification was failed in file: " + file.getAbsolutePath());
         }
     }
 
@@ -122,15 +106,15 @@ public final class FileDateCorrectorUtil {
         if (Constants.ALLOWED_VIDEO_FILES.contains(ext) || Constants.ALLOWED_IMAGE_FILES.contains(ext)) {
             result = setDatesInFileMetadata(file, date, EXIFTOOL_DATE_CORRECTION_CMD_WITH_LATIN_CHARSET);
             if (!result) {
-                System.out.println("Date set with latin charset was unsuccessful. "
-                                   + "File: "
-                                   + file.getAbsolutePath()
-                                   + " -> Trying it with workaround now...");
+                logger.warn("Date set with latin charset failed in file: "
+                            + file.getAbsolutePath()
+                            + " -> Trying it with workaround now...");
                 result = setDatesInFileMetadataWithFileMovingWorkaround(file, date);
             }
         } else {
-            System.out.println("File is not allowed to process. Extension not allowed. File: "
-                               + file.getAbsolutePath());
+            logger.warn("File is not allowed to be processed. Extension not allowed. File: "
+                        + file.getAbsolutePath() + " | "
+                        + Constants.ALLOWED_FILE_EXTENSIONS_INFO);
         }
         return result;
     }
@@ -145,14 +129,35 @@ public final class FileDateCorrectorUtil {
         if (tmpFile != null && tmpFile.exists()) {
             result = setDatesInFileMetadata(tmpFile, date, EXIFTOOL_DATE_CORRECTION_CMD_WITH_UTF8_CHARSET);
             if (!result) {
-                System.out.println("Not able to set metadata for file: " + file.getAbsolutePath());
+                logger.error("Not able to set metadata for file: " + file.getAbsolutePath());
             }
         } else {
-            System.out.println("Not able to create temporary file to change metadata.");
+            logger.error("Not able to create temporary file to change metadata.");
             result = false;
         }
         moveFileBackToItsOriginalLocation(tmpFile, file);
         return result;
+    }
+
+    public static boolean setDatesInFileMetadata(File file, String date, String exiftoolCmd) {
+        try {
+            String dateCorrected = date.replaceAll("-", ":");
+            String tmpFilePath = file.getAbsolutePath();
+            List<String> metadata = Arrays
+                .stream(METADATA).map(m -> MessageFormat.format(m, dateCorrected)).collect(Collectors.toList());
+            String metadataJoined = String.join(" ", metadata);
+            String cmd = MessageFormat.format(exiftoolCmd, metadataJoined, tmpFilePath);
+            logger.info("Attempting to run command: " + cmd);
+            CommandLine cmdLine = CommandLine.parse(cmd);
+            DefaultExecutor executor = new DefaultExecutor();
+            int execute = executor.execute(cmdLine);
+            logger.info("Command execution result: " + execute);
+            return true;
+        } catch (IOException e) {
+            logger.error("Failed to run command.");
+            logger.error(e.toString());
+        }
+        return false;
     }
 
     private static void moveFileBackToItsOriginalLocation(File tmpFile, File originalFile) {
@@ -165,26 +170,6 @@ public final class FileDateCorrectorUtil {
         }
     }
 
-    public static boolean setDatesInFileMetadata(File file, String date, String exiftoolCmd) {
-        boolean result = true;
-        try {
-            String dateCorrected = date.replaceAll("-", ":");
-            String tmpFilePath = file.getAbsolutePath();
-            List<String> metadata = Arrays
-                .stream(METADATA).map(m -> MessageFormat.format(m, dateCorrected)).collect(Collectors.toList());
-            String metadataJoined = String.join(" ", metadata);
-            String cmd = MessageFormat.format(exiftoolCmd, metadataJoined, tmpFilePath);
-            System.out.println(cmd);
-            CommandLine cmdLine = CommandLine.parse(cmd);
-            DefaultExecutor executor = new DefaultExecutor();
-            executor.execute(cmdLine);
-        } catch (IOException e) {
-            e.printStackTrace();
-            result = false;
-        }
-        return result;
-    }
-
     private static File moveFileWithSimplifiedNameToRoot(File file) {
         File tempMovedFile = null;
         try {
@@ -195,7 +180,7 @@ public final class FileDateCorrectorUtil {
             if (tempMovedFile.exists()) {
                 boolean delete = tempMovedFile.delete();
                 if (delete) {
-                    System.out.println("Previously created temp moved file detected and deleted.");
+                    logger.info("Previously created temp moved file detected and deleted.");
                 } else {
                     throw new RuntimeException("Previously created temp moved file detected BUT can not be deleted.");
                 }
@@ -208,30 +193,11 @@ public final class FileDateCorrectorUtil {
     }
 
     private static String getVideoFileCreationDateString(File convertedFile, File originalFile) {
-        String result;
-        if (originalFile != null) {
+        if (FileUtil.isFileVideo(originalFile)) {
             ZonedDateTime fileCreationDate = FileUtil.getVideoFileCreationTime(originalFile);
-            result = RenameUtil.getFormattedDateString(fileCreationDate);
-        } else {
-            result = getFileCreationDateFromName(convertedFile);
+            return RenameUtil.getFormattedDateString(fileCreationDate);
         }
-        return result;
-    }
-
-    private static String getFileCreationDateFromName(File file) {
-        String result = null;
-        String fileCreationDateRaw = FileUtil.getDateStringFromFileName(file);
-        String dateRawFromParentDir = FileUtil.getDateStringFromFileParentDirName(file);
-        DateValidator validator = new DateValidatorUsingDateFormat();
-        ZonedDateTime fileCreationDate = FileUtil.getVideoFileCreationTime(file);
-        if (validator.isValid(fileCreationDateRaw)) {
-            result = fileCreationDateRaw.replaceAll("-", ":");
-        } else if (validator.isValid(dateRawFromParentDir)) {
-            result = dateRawFromParentDir.replaceAll("-", ":");
-        } else if (fileCreationDate != null) {
-            result = RenameUtil.getFormattedDateString(fileCreationDate);
-        }
-        return result;
+        return RenameUtil.getDateStringFromFileName(convertedFile);
     }
 
 }
