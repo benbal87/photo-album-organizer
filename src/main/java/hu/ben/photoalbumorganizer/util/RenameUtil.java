@@ -27,20 +27,12 @@ public final class RenameUtil {
     }
 
     public static String getFormattedDateString(ZonedDateTime date) {
-        return getFormattedDateStringFromZonedDateTime(date, ISO_8601_DATE_FORMAT);
+        return getFormattedDateString(date, ISO_8601_DATE_FORMAT);
     }
 
     public static String getFormattedDateString(ZonedDateTime date, String dateFormat) {
-        return getFormattedDateStringFromZonedDateTime(date, dateFormat);
-    }
-
-    public static String getFormattedDateStringFromZonedDateTime(ZonedDateTime zd) {
-        return getFormattedDateStringFromZonedDateTime(zd, ISO_8601_DATE_FORMAT);
-    }
-
-    public static String getFormattedDateStringFromZonedDateTime(ZonedDateTime zd, String pattern) {
-        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(pattern);
-        return zd.format(formatter);
+        DateTimeFormatter formatter = DateTimeFormatter.ofPattern(dateFormat);
+        return date.format(formatter);
     }
 
     public static ZonedDateTime getDateFromFileName(File file) {
@@ -61,7 +53,7 @@ public final class RenameUtil {
             String possibleDateStr = fileName.substring(0, 10);
             if (new DateValidatorUsingDateFormat().isValid(possibleDateStr)) {
                 ZonedDateTime zd = getDateFromDateString(possibleDateStr);
-                return getFormattedDateStringFromZonedDateTime(zd);
+                return getFormattedDateString(zd);
             }
 
             // We are trying to get the date from a file name like this "Photo 1-12-2022, 18 15 33.jpg"
@@ -72,7 +64,7 @@ public final class RenameUtil {
                 String dateStr = partOne.substring(0, partOne.length() - 1);
                 if (new DateValidatorUsingDateFormat(DAY_MONTH_YEAR_DATE_FORMAT).isValid(dateStr)) {
                     ZonedDateTime zd = getDateFromDateString(dateStr);
-                    return getFormattedDateStringFromZonedDateTime(zd, DAY_MONTH_YEAR_DATE_FORMAT);
+                    return getFormattedDateString(zd, DAY_MONTH_YEAR_DATE_FORMAT);
                 }
             } catch (Exception e) {
                 e.printStackTrace();
