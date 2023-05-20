@@ -21,7 +21,14 @@ public final class RenameForIphone {
 
     private static final Logger logger = LogManager.getLogger(RenameForIphone.class);
 
+    public static final List<String> IPHONE_FILE_LEADING_CHARS = List.of("Photo", "Video");
+
     private RenameForIphone() {
+    }
+
+    public static boolean isFileFromIphone(File file) {
+        String fileName = file.getName();
+        return IPHONE_FILE_LEADING_CHARS.stream().anyMatch(fileName::startsWith);
     }
 
     public static void renameFiles(String workDir) {
@@ -43,7 +50,7 @@ public final class RenameForIphone {
         }
     }
 
-    public static String getAlbumInfoStringFromParentDir(File albumDir) {
+    private static String getAlbumInfoStringFromParentDir(File albumDir) {
         logger.info("Get album info string from album directory name: " + albumDir);
         if (albumDir.isDirectory()) {
             String folderName = albumDir.getName();
@@ -58,10 +65,6 @@ public final class RenameForIphone {
                          + albumDir.getAbsolutePath());
         }
         return null;
-    }
-
-    private static boolean isFileFromIphone(File file) {
-        return file.getName().startsWith("Photo") || file.getName().startsWith("Video");
     }
 
     private static void renameFiles(String albumDir, String albumInfoStr) {

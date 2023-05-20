@@ -25,19 +25,19 @@ public class AlbumOrganizer {
 
     public void organizeAlbumFiles() {
         long startTime = System.currentTimeMillis();
+
         new Rename().renameAlbumFiles(workDir);
         RenameForIphone.renameFiles(workDir);
         HandBrakeUtil.convertVideoFiles(workDir);
         FileDateCorrectorUtil.setFileDatesBasedOnFileName(workDir);
-        FileDateCorrectorUtil.setFileDatesBasedOnDateInParentDirName(workDir);
+
         logElapsedTime(startTime);
     }
 
     private static void logElapsedTime(long startTime) {
         long endTime = System.currentTimeMillis();
         double elapsedTime = (double) (endTime - startTime) / (1000);
-        String msg = MessageFormat.format("{0}Elapsed time is {1} seconds.", LogUtil.getSeparator(), elapsedTime);
-        logger.info(msg);
+        logger.info(MessageFormat.format("{0}Elapsed time is {1} seconds.", LogUtil.getSeparator(), elapsedTime));
     }
 
 }

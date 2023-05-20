@@ -65,6 +65,7 @@ public final class FileDateCorrectorUtil {
     }
 
     public static void setFileDatesBasedOnFileName(String dir) {
+        logger.info(LogUtil.getSeparator(3) + "Starting to set file dates based on file names in directory: " + dir);
         File dirFile = new File(dir);
         if (dirFile.exists()) {
             Collection<File> files = FileUtil.getImageAndVideoFiles(dir);
@@ -78,6 +79,9 @@ public final class FileDateCorrectorUtil {
     }
 
     public static void setFileDatesBasedOnDateInParentDirName(String dir) {
+        logger.info(LogUtil.getSeparator(3)
+                    + "Starting to set file dates based on album names in directory: "
+                    + dir);
         File dirFile = new File(dir);
         if (dirFile.exists()) {
             Collection<File> files = FileUtil.getImageAndVideoFiles(dir);

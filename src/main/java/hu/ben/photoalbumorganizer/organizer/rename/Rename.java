@@ -196,7 +196,7 @@ public class Rename {
         boolean isFileImage = FileUtil.isFileImage(file);
         boolean isFileVideo = FileUtil.isFileVideo(file);
 
-        if (isFileImage || isFileVideo) {
+        if ((isFileImage || isFileVideo) && !RenameForIphone.isFileFromIphone(file)) {
             File parentFile = file.getParentFile();
             MediaDirectory mediaDirectory = getMediaDirectoryFromMediaWrapperIfExists(parentFile, mw);
             if (mediaDirectory == null) {
