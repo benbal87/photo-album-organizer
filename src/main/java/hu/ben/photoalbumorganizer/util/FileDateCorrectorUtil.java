@@ -100,7 +100,7 @@ public final class FileDateCorrectorUtil {
         if (result) {
             logger.info("Metadata modification was successful in file: " + file.getAbsolutePath());
         } else {
-            logger.error("Metadata modification was failed in file: " + file.getAbsolutePath());
+            logger.error("Metadata modification failed in file: " + file.getAbsolutePath());
         }
     }
 
