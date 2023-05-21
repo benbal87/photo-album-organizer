@@ -108,7 +108,9 @@ public final class FileDateCorrectorUtil {
 
     public static void setFileDates(File file, String date) {
         logger.info(LogUtil.getSeparator() + "Attempting to change dates in file metadata: " + file.getAbsolutePath());
-        boolean result = handleDateChangingInFileMetadata(file, date);
+        boolean result = date != null
+                         && (FileUtil.isFileVideo(file) || FileUtil.isFileImage(file))
+                         && handleDateChangingInFileMetadata(file, date);
         if (result) {
             logger.info("Metadata modification was successful in file: " + file.getAbsolutePath());
         } else {
