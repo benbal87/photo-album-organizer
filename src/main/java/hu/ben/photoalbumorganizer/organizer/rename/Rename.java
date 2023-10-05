@@ -3,6 +3,7 @@ package hu.ben.photoalbumorganizer.organizer.rename;
 import java.io.File;
 import java.text.MessageFormat;
 import java.time.ZonedDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.SortedSet;
 
@@ -233,6 +234,7 @@ public class Rename {
 
         ZonedDateTime imageFileCreationTime = FileUtil.getImageFileCreationTime(file);
         if (imageFileWrapperList.isEmpty()) {
+            logger.debug("Image file wrapper list empty!!!");
             ImageFileWrapper newImageFileWrapper = new ImageFileWrapper();
             newImageFileWrapper.setFileCreationDate(imageFileCreationTime);
             newImageFileWrapper.getImageFiles().add(file);
@@ -242,14 +244,19 @@ public class Rename {
                 getFileWrapperWithSameDayIfExists(imageFileWrapperList, imageFileCreationTime);
 
             if (imageFileWrapper == null) {
+                logger.debug(
+                    "getFileWrapperWithSameDayIfExists was NOT able to find imageFileWrapper with the same day. "
+                    + "Creating new one.");
                 ImageFileWrapper newImageFileWrapper = new ImageFileWrapper();
                 newImageFileWrapper.setFileCreationDate(imageFileCreationTime);
                 newImageFileWrapper.getImageFiles().add(file);
                 imageFileWrapperList.add(newImageFileWrapper);
             } else {
+                logger.debug("getFileWrapperWithSameDayIfExists found imageFileWrapper with the same day.");
                 imageFileWrapper.getImageFiles().add(file);
             }
         }
+        logger.debug("File added to image wrapper list.");
     }
 
     private static void addFileToVideoWrapperList(MediaDirectory mediaDirectory, File file) {
@@ -283,7 +290,9 @@ public class Rename {
     ) {
         return fileWrapperList
             .stream()
-            .filter(fileWrapper -> fileCreationTime.isEqual(fileWrapper.getFileCreationDate()))
+            .filter(fileWrapper -> fileCreationTime
+                .truncatedTo(ChronoUnit.DAYS)
+                .equals(fileWrapper.getFileCreationDate().truncatedTo(ChronoUnit.DAYS)))
             .findAny()
             .orElse(null);
     }
