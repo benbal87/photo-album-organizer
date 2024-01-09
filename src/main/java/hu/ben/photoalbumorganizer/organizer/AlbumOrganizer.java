@@ -7,7 +7,6 @@ import org.apache.logging.log4j.Logger;
 
 import hu.ben.photoalbumorganizer.organizer.rename.Rename;
 import hu.ben.photoalbumorganizer.organizer.rename.RenameForIphone;
-import hu.ben.photoalbumorganizer.util.FileDateCorrectorUtil;
 import hu.ben.photoalbumorganizer.util.HandBrakeUtil;
 import hu.ben.photoalbumorganizer.util.LogUtil;
 import lombok.AllArgsConstructor;
@@ -29,7 +28,7 @@ public class AlbumOrganizer {
         new Rename().renameAlbumFiles(workDir);
         RenameForIphone.renameFiles(workDir);
         HandBrakeUtil.convertVideoFiles(workDir);
-        FileDateCorrectorUtil.setFileDatesBasedOnFileName(workDir);
+//        FileDateCorrectorUtil.setFileDatesBasedOnFileName(workDir);
 
         logElapsedTime(startTime);
     }

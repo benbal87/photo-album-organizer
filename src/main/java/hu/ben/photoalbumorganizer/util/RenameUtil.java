@@ -20,6 +20,10 @@ public final class RenameUtil {
 
     public static final String ISO_8601_DATE_FORMAT = "yyyy-MM-dd";
 
+    public static final String ISO_8601_DATE_TIME_FORMAT = "yyyy-MM-dd HH:mm:ss";
+
+    public static final String ISO_8601_TIME_FORMAT = "HH:mm:ss";
+
     public static final String ISO_8601_DATE_FORMAT_WITHOUT_DASH = "yyyyMMdd";
 
     public static final String DAY_MONTH_YEAR_DATE_FORMAT = "yyyy-MM-dd";
